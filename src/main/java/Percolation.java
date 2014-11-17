@@ -8,32 +8,44 @@ class Percolation {
 
     public static boolean neighbors4(boolean[][] table) {
         System.out.println(Arrays.deepToString(table));
-        return percolates(table);
+        return percolates(table, new FourNeighboursSupplier());
 
     }
 
-    private static boolean percolates(boolean[][] table) {
+    public static boolean neighbors8(boolean[][] table) {
+        System.out.println(Arrays.deepToString(table));
+        return percolates(table, new EightNeighboursSupplier());
+    }
+
+
+    private static boolean percolates(boolean[][] table, NeighboursSupplier neighboursSupplier) {
         int height = table.length;
         int width = table[0].length;
+        if( width > height ){
+             table = rotateArrayRight(table);
+        }
+        height = table.length;
+        width = table[0].length;
 
         Point firstOpen;
         firstOpen = findFirstOpenPoint(table, width);
         if (thereIsNoOpenPointInFirstRow(firstOpen))
             return false;
 
-        Map<Point, Deque<Point>> openPoints = getAllOpenPoints(table, height, width);
+        Map<Point, Deque<Point>> openPoints = getAllOpenPoints(table, height, width, neighboursSupplier);
+        System.out.println(openPoints);
 
         Point currentPoint = firstOpen;
         return recursiveTraverse(currentPoint, openPoints, height);
 
     }
 
-    private static Map<Point, Deque<Point>> getAllOpenPoints(boolean[][] table, int height, int width) {
+    private static Map<Point, Deque<Point>> getAllOpenPoints(boolean[][] table, int height, int width, NeighboursSupplier neighboursSupplier) {
         Map<Point, Deque<Point>> openPoints = new LinkedHashMap<Point, Deque<Point>>();
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 if (isOpen(table[i][j])) {
-                    Deque<Point> openNeighbours = getFourOpenNeighbours(table, i, j);
+                    Deque<Point> openNeighbours = neighboursSupplier.getOpenNeighbours(table, i, j);
                     openPoints.put(new Point(i, j), openNeighbours);
                 }
             }
@@ -50,29 +62,46 @@ class Percolation {
                                 Map<Point, Deque<Point>> openPoints,
                                 Deque<Point> availablePoints, int height,
                                 LinkedList<Point> alreadyVisited) {
+        if(previousPoint == null && currentPoint == null && availablePoints == null) {
+            return false;
+        }
         alreadyVisited.add(currentPoint);
 
         if (isAtTheEndOfTable(currentPoint, height)) {
             return true;
         } else if (availablePoints.isEmpty()) {
             Deque<Point> neighbours = openPoints.get(previousPoint);
-            System.out.println("prev" + previousPoint  + " cur " + currentPoint + " neighbours  " + neighbours);
+            System.out.println("prev" + previousPoint + " cur " + currentPoint + " neighbours  " + neighbours);
             return loop(null, previousPoint, openPoints, neighbours, height, alreadyVisited);
         }
 
         Point newCurrent = availablePoints.pop();
 
-        while(pointWasAlreadyVisited(alreadyVisited, newCurrent) && !availablePoints.isEmpty()){
+        while (pointWasAlreadyVisited(alreadyVisited, newCurrent) && !availablePoints.isEmpty()) {
             newCurrent = availablePoints.pop();
         }
-        if(pointWasAlreadyVisited(alreadyVisited, newCurrent) && availablePoints.isEmpty()){
+        if (pointWasAlreadyVisited(alreadyVisited, newCurrent) && availablePoints.isEmpty()) {
+            if(previousPoint == null){
+                previousPoint = getPointBefore(currentPoint, alreadyVisited);
+                System.out.println("prev is null, cur: " + currentPoint + " newPrevious : " + previousPoint);
+            }
             return loop(null, previousPoint, openPoints, openPoints.get(previousPoint), height, alreadyVisited);
         }
 
 
         Deque<Point> neighbours = openPoints.get(newCurrent);
-        System.out.println("newCurrent : " +newCurrent + " neighbours " + neighbours);
+        System.out.println("newCurrent : " + newCurrent + " neighbours " + neighbours);
         return loop(currentPoint, newCurrent, openPoints, neighbours, height, alreadyVisited);
+    }
+
+    private static Point getPointBefore(Point currentPoint, LinkedList<Point> alreadyVisited) {
+        for (int i = 0; i < alreadyVisited.size(); i++) {
+            System.out.println("-->" + alreadyVisited.get(i));
+            if(alreadyVisited.get(i).equals(currentPoint)){
+                return alreadyVisited.get(i - 1);
+            }
+        }
+        return null;
     }
 
     static boolean pointWasAlreadyVisited(List<Point> alreadyVisited, Point newCurrent) {
@@ -98,28 +127,6 @@ class Percolation {
         return null;
     }
 
-
-    private static Deque<Point> getFourOpenNeighbours(boolean[][] table, int i, int j) {
-        Deque<Point> neighbourOpenPoint = new ArrayDeque<Point>();
-        List<Point> neighbourPoint = createNeighbourInArrayBounds(table, i, j);
-        for (Point point : neighbourPoint) {
-            if (isOpen(table[point.i][point.j])) {
-                neighbourOpenPoint.add(point);
-            }
-        }
-        return neighbourOpenPoint;
-    }
-
-    private static List<Point> createNeighbourInArrayBounds(boolean[][] table, int i, int j) {
-        List<Point> neighbourPointInArrayBounds = new LinkedList<Point>();
-        addToListIfIsInArrayBound(table, i - 1, j, neighbourPointInArrayBounds);
-        addToListIfIsInArrayBound(table, i + 1, j, neighbourPointInArrayBounds);
-        addToListIfIsInArrayBound(table, i, j + 1, neighbourPointInArrayBounds);
-        addToListIfIsInArrayBound(table, i, j - 1, neighbourPointInArrayBounds);
-
-        return neighbourPointInArrayBounds;
-    }
-
     private static void addToListIfIsInArrayBound(boolean[][] table, int i, int j, List<Point> neighbourPointInArrayBounds) {
         if (isInArrayBound(table, i, j)) {
             neighbourPointInArrayBounds.add(new Point(i, j));
@@ -136,10 +143,18 @@ class Percolation {
         return !b;
     }
 
-    public static boolean neighbors8(boolean[][] table) {
-        return false;
+    static boolean[][] rotateArrayRight(boolean[][] input)
+    {
+        int newWidth = input.length;
+        int newHeight = input[0].length;
+        boolean[][] result = new boolean[newHeight][newWidth];
+        for (int i = 0; i < newHeight; ++i) {
+            for (int j = 0; j < newWidth; ++j) {
+                result[i][j] = input[newWidth - j - 1][i];
+            }
+        }
+        return result;
     }
-
 
     public static class Point {
         int i;
@@ -177,5 +192,64 @@ class Percolation {
             result = 31 * result + j;
             return result;
         }
+    }
+
+    static interface NeighboursSupplier {
+        public Deque<Point> getOpenNeighbours(boolean[][] table, int i, int j);
+    }
+
+    static class FourNeighboursSupplier implements NeighboursSupplier {
+
+        @Override
+        public Deque<Point> getOpenNeighbours(boolean[][] table, int i, int j) {
+            Deque<Point> neighbourOpenPoint = new ArrayDeque<Point>();
+            List<Point> neighbourPoint = createNeighbourInArrayBounds(table, i, j);
+            for (Point point : neighbourPoint) {
+                if (isOpen(table[point.i][point.j])) {
+                    neighbourOpenPoint.add(point);
+                }
+            }
+            return neighbourOpenPoint;
+        }
+
+        private static List<Point> createNeighbourInArrayBounds(boolean[][] table, int i, int j) {
+            List<Point> neighbourPointInArrayBounds = new LinkedList<Point>();
+            addDirectNeighbours(table, i, j, neighbourPointInArrayBounds);
+
+            return neighbourPointInArrayBounds;
+        }
+    }
+
+    static class EightNeighboursSupplier implements NeighboursSupplier {
+
+        @Override
+        public Deque<Point> getOpenNeighbours(boolean[][] table, int i, int j) {
+            Deque<Point> neighbourOpenPoint = new ArrayDeque<Point>();
+            List<Point> neighbourPoint = createNeighbourInArrayBounds(table, i, j);
+            for (Point point : neighbourPoint) {
+                if (isOpen(table[point.i][point.j])) {
+                    neighbourOpenPoint.add(point);
+                }
+            }
+            return neighbourOpenPoint;
+        }
+
+        private static List<Point> createNeighbourInArrayBounds(boolean[][] table, int i, int j) {
+            List<Point> neighbourPointInArrayBounds = new LinkedList<Point>();
+            addDirectNeighbours(table, i, j, neighbourPointInArrayBounds);
+            addToListIfIsInArrayBound(table, i - 1, j - 1, neighbourPointInArrayBounds);
+            addToListIfIsInArrayBound(table, i + 1, j + 1, neighbourPointInArrayBounds);
+            addToListIfIsInArrayBound(table, i - 1, j + 1, neighbourPointInArrayBounds);
+            addToListIfIsInArrayBound(table, i + 1, j - 1, neighbourPointInArrayBounds);
+
+            return neighbourPointInArrayBounds;
+        }
+    }
+
+    private static void addDirectNeighbours(boolean[][] table, int i, int j, List<Point> neighbourPointInArrayBounds) {
+        addToListIfIsInArrayBound(table, i - 1, j, neighbourPointInArrayBounds);
+        addToListIfIsInArrayBound(table, i + 1, j, neighbourPointInArrayBounds);
+        addToListIfIsInArrayBound(table, i, j + 1, neighbourPointInArrayBounds);
+        addToListIfIsInArrayBound(table, i, j - 1, neighbourPointInArrayBounds);
     }
 }
