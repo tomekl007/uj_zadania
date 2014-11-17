@@ -114,4 +114,72 @@ public class PercolationTest {
         //then
         assertThat(isARoute).isFalse();
     }
+    @Test
+    public void onlyFalse(){
+        boolean[][] input = {{false, false, false, false}, {false, false, false, false},
+                {false, false, false, false},  {false, false, false, false}};
+        //when
+        boolean isARoute = Percolation.neighbors4(input);
+        //then
+        assertThat(isARoute).isTrue();
+    }
+    @Test
+    public void falseInFirstRow(){
+        boolean[][] input = {{false, false,false,false},
+                {true,true,true,true},{true,true,true,true},{true,true,true,true}};
+        //when
+        boolean isARoute = Percolation.neighbors4(input);
+        //then
+        assertThat(isARoute).isFalse();
+    }
+    @Test
+    public void onlyTrue(){
+        boolean[][] input = {{true,true,true,true}, {true,true,true,true},
+                {true,true,true,true},  {true,true,true,true}};
+        //when
+        boolean isARoute = Percolation.neighbors4(input);
+        //then
+        assertThat(isARoute).isFalse();
+    }
+
+
+    @Test
+    public void hugeInputTrue(){
+        boolean[][] input = {{false, true, true, true, true, true, true, true, true, true, true, true, true,true},
+                {false, false, true, true, true, true, true, true, true, true, true, true, true,true},
+                {true, false, false, true, true, true, true, true, true, true, true, true, true,true},
+                {true, true, false, true, true, true, true, true, true, true, true, true, true,true},
+                {true, true, false, false, true, true, true, true, true, true, true, true, true,true},
+                {true, true, true, false, false, false, false, false, false, false, false, false, false,false},
+                {true, true, true, false, false, true, true, true, true, true, true, true, true,true},
+                {true, true, true, true, false, false, true, true, true, true, true, true, true,true},
+                {true, true, true, true, true, false, true, true, true, true, true, true, true,true}};
+
+        //when
+        boolean isARoute = Percolation.neighbors4(input);
+        //then
+        assertThat(isARoute).isTrue();
+    }
+
+
+    @Test
+    public void hugeInputFalse(){
+        boolean[][] input = {{false, true, true, true, true, true, true, true, true, true, true, true, true,true},
+                {false, false, true, true, true, true, true, true, true, true, true, true, true,true},
+                {true, false, false, true, true, true, true, true, true, true, true, true, true,true},
+                {true, true, false, true, true, true, true, true, true, true, true, true, true,true},
+                {true, true, false, false, true, true, true, true, true, true, true, true, true,true},
+                {true, true, true, false, false, false, false, false, false, false, false, false, false,false},
+                {true, true, true, false, false, true, true, true, true, true, true, true, true,true},
+                {true, true, true, true, false, false, true, true, true, true, true, true, true,true},
+                {true, true, true, true, true, true, true, true, true, true, true, true, true,true}};
+
+        //when
+        boolean isARoute = Percolation.neighbors4(input);
+        //then
+        assertThat(isARoute).isTrue();
+    }
+
+
+
 }
