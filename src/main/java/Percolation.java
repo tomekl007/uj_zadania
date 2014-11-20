@@ -7,13 +7,11 @@ import java.util.*;
 class Percolation {
 
     public static boolean neighbors4(boolean[][] table) {
-        System.out.println(Arrays.deepToString(table));
         return percolates(table, new FourNeighboursSupplier());
 
     }
 
     public static boolean neighbors8(boolean[][] table) {
-        System.out.println(Arrays.deepToString(table));
         return percolates(table, new EightNeighboursSupplier());
     }
 
@@ -27,20 +25,37 @@ class Percolation {
         height = table.length;
         width = table[0].length;
 
-        Point firstOpen;
-        firstOpen = findFirstOpenPoint(table, width);
-        if (thereIsNoOpenPointInFirstRow(firstOpen))
+
+        List<Point> openPointsInFirstRow = findFirstOpenPoints(table, width);
+        if (thereIsNoOpenPointInFirstRow(openPointsInFirstRow))
             return false;
 
-        Map<Point, Deque<Point>> openPoints = getAllOpenPoints(table, height, width, neighboursSupplier);
-        System.out.println(openPoints);
 
-        Point currentPoint = firstOpen;
-        return recursiveTraverse(currentPoint, openPoints, height);
+
+
+        for(Point currentPoint : openPointsInFirstRow) {
+          Map<Point, Deque<Point>> openPoints = getAllOpenPoints(table, height, width, neighboursSupplier);
+          if(recursiveTraverse(currentPoint, openPoints, height))
+            return true;
+
+        }
+        return false;
 
     }
 
-    private static Map<Point, Deque<Point>> getAllOpenPoints(boolean[][] table, int height, int width, NeighboursSupplier neighboursSupplier) {
+  private static List<Point> findFirstOpenPoints(boolean[][] table, int width) {
+    List<Point> result = new LinkedList<Point>();
+    for (int i = 0; i < 1; i++) {
+      for (int j = 0; j < width; j++) {
+        if (isOpen(table[i][j])) {
+           result.add(new Point(i, j));
+        }
+      }
+    }
+    return result;
+  }
+
+  private static Map<Point, Deque<Point>> getAllOpenPoints(boolean[][] table, int height, int width, NeighboursSupplier neighboursSupplier) {
         Map<Point, Deque<Point>> openPoints = new LinkedHashMap<Point, Deque<Point>>();
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
@@ -70,8 +85,10 @@ class Percolation {
         if (isAtTheEndOfTable(currentPoint, height)) {
             return true;
         } else if (availablePoints.isEmpty()) {
+          if(previousPoint == null){
+              previousPoint = getPointBefore(currentPoint, alreadyVisited);
+          }
             Deque<Point> neighbours = openPoints.get(previousPoint);
-            System.out.println("prev" + previousPoint + " cur " + currentPoint + " neighbours  " + neighbours);
             return loop(null, previousPoint, openPoints, neighbours, height, alreadyVisited);
         }
 
@@ -83,21 +100,19 @@ class Percolation {
         if (pointWasAlreadyVisited(alreadyVisited, newCurrent) && availablePoints.isEmpty()) {
             if(previousPoint == null){
                 previousPoint = getPointBefore(currentPoint, alreadyVisited);
-                System.out.println("prev is null, cur: " + currentPoint + " newPrevious : " + previousPoint);
             }
             return loop(null, previousPoint, openPoints, openPoints.get(previousPoint), height, alreadyVisited);
         }
 
 
         Deque<Point> neighbours = openPoints.get(newCurrent);
-        System.out.println("newCurrent : " + newCurrent + " neighbours " + neighbours);
         return loop(currentPoint, newCurrent, openPoints, neighbours, height, alreadyVisited);
     }
 
     private static Point getPointBefore(Point currentPoint, LinkedList<Point> alreadyVisited) {
         for (int i = 0; i < alreadyVisited.size(); i++) {
-            System.out.println("-->" + alreadyVisited.get(i));
             if(alreadyVisited.get(i).equals(currentPoint)){
+              if(i == 0) return null;
                 return alreadyVisited.get(i - 1);
             }
         }
@@ -112,8 +127,8 @@ class Percolation {
         return currentPoint.i == height - 1;
     }
 
-    private static boolean thereIsNoOpenPointInFirstRow(Point firstOpen) {
-        return firstOpen == null;
+    private static boolean thereIsNoOpenPointInFirstRow(List<Point> firstOpen) {
+        return firstOpen.isEmpty();
     }
 
     private static Point findFirstOpenPoint(boolean[][] table, int width) {
