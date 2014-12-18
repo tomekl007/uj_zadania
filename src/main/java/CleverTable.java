@@ -2,7 +2,7 @@
  * @author Tomasz Lelek
  * @since 2014-11-18
  */
-public class CleverTable extends CleverTableA {
+class CleverTable extends CleverTableA {
     private boolean[][] live;
     private int[][] age;
 
