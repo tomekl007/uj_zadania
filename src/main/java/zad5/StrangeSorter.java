@@ -9,7 +9,7 @@ import java.util.List;
  * @author Tomasz Lelek
  * @since 2015-01-09
  */
-public class StrangeSorter implements StrangeSorterInterface {
+class StrangeSorter implements StrangeSorterInterface {
   private StrangeInterface si;
   final protected  List<ExceptionWithWeight> exceptions = new LinkedList<ExceptionWithWeight>();
 
@@ -37,17 +37,41 @@ public class StrangeSorter implements StrangeSorterInterface {
 
   @Override
   public List<Exception> getExceptions(Exception example) {
-    Collections.sort(exceptions, new Comparator<ExceptionWithWeight>() {
-      @Override
-      public int compare(ExceptionWithWeight o1, ExceptionWithWeight o2) {
-        return ascendingOrderSort(o1, o2);
+    if( example instanceof HeavyException){
+      Collections.sort(exceptions, new Comparator<ExceptionWithWeight>() {
+        @Override
+        public int compare(ExceptionWithWeight o1, ExceptionWithWeight o2) {
+          return ascendingOrderSort(o1, o2);
+        }
+      });
+      List<Exception> result = new LinkedList<Exception>();
+      for(ExceptionWithWeight e : exceptions){
+        if(e.e instanceof HeavyException)
+          result.add(e.e) ;
       }
-    });
-    List<Exception> result = new LinkedList<Exception>();
-    for(ExceptionWithWeight e : exceptions){
-      result.add(e.e) ;
+      return result;
+    }else if(example instanceof TransparentException){
+      Collections.sort(exceptions, new Comparator<ExceptionWithWeight>() {
+        @Override
+        public int compare(ExceptionWithWeight o1, ExceptionWithWeight o2) {
+          return ascendingOrderSort(o1, o2);
+        }
+      });
+      List<Exception> result = new LinkedList<Exception>();
+      for(ExceptionWithWeight e : exceptions){
+        if(e.e instanceof TransparentException)
+        result.add(e.e) ;
+      }
+      return result;
+
+    } else{
+      List<Exception> result = new LinkedList<Exception>();
+      for(ExceptionWithWeight e : exceptions){
+        result.add(e.e) ;
+      }
+      return result;
     }
-    return result;
+
   }
 
   private int ascendingOrderSort(ExceptionWithWeight o1, ExceptionWithWeight o2) {
