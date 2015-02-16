@@ -53,7 +53,37 @@ public class DisplaySystemTest {
     
     @Test
     public void shouldAddGroupToGroup(){
+        //given
+        zad8.DisplaySystem displaySystem = new zad8.DisplaySystem();
+        int firstDisplayId = displaySystem.registerDisplay(3);
+        int secondDisplayId = displaySystem.registerDisplay(2);
+        int groupId = displaySystem.createGroup();
+        displaySystem.addDisplayToGroup(firstDisplayId, groupId);
+        displaySystem.addDisplayToGroup(secondDisplayId, groupId);
+
+        int idGroupSecondDisplay = displaySystem.registerDisplay(10);
+        int secondGroupId = displaySystem.createGroup();
+        displaySystem.addDisplayToGroup(idGroupSecondDisplay, secondGroupId);
         
+        displaySystem.addGroupToGroup(groupId, secondGroupId);
+        
+        int displayRecursiveId = displaySystem.registerDisplay(2);
+        int groupRecursive = displaySystem.createGroup();
+        
+        displaySystem.addDisplayToGroup(displayRecursiveId, groupRecursive);
+        displaySystem.addGroupToGroup(secondGroupId, groupRecursive);
+        //when
+        String message = "message";
+        displaySystem.toGroup(groupId, message);
+        //then
+        assertThat(displaySystem.get(firstDisplayId)[0]).isEqualTo(message);
+        assertThat(displaySystem.get(secondDisplayId)[0]).isEqualTo(message);
+        assertThat(displaySystem.get(idGroupSecondDisplay)[0]).isEqualTo(message);
+        assertThat(displaySystem.get(displayRecursiveId)[0]).isEqualTo(message);
+
+        displaySystem.removeGroup(groupId);
+        boolean result = displaySystem.addDisplayToGroup(firstDisplayId, secondGroupId);
+        assertThat(result).isTrue();
         
     }
     
