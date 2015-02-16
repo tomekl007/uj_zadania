@@ -12,7 +12,7 @@ public class StrangeSorterTest {
   public void shouldHaveTwoExceptions() {
     //given
     StrangeInterface strangeInterface = createStrangeInterface();
-    StrangeSorter strangeSorter = new StrangeSorter();
+      StrangeSorterBartek strangeSorter = new StrangeSorterBartek();
     //when
     strangeSorter.setStrangeInterface(strangeInterface);
     //then
@@ -23,7 +23,7 @@ public class StrangeSorterTest {
   public void shouldReturnUnsortedExceptions() {
     //given
     StrangeInterface strangeInterface = createStrangeInterface();
-    StrangeSorter strangeSorter = new StrangeSorter();
+      StrangeSorterBartek strangeSorter = new StrangeSorterBartek();
     //when
     strangeSorter.setStrangeInterface(strangeInterface);
     //then
@@ -37,7 +37,7 @@ public class StrangeSorterTest {
   public void shouldReturnTwoHeavySortedExceptions() {
     //given
     StrangeInterface strangeInterface = createStrangeInterfaceTwoHeavy();
-    StrangeSorter strangeSorter = new StrangeSorter();
+      StrangeSorterBartek strangeSorter = new StrangeSorterBartek();
     //when
     strangeSorter.setStrangeInterface(strangeInterface);
     //then
@@ -53,7 +53,7 @@ public class StrangeSorterTest {
   public void shouldReturnThreeSortedTransparentExceptions() {
     //given
     StrangeInterface strangeInterface = createStrangeInterfaceThreeTransparentException();
-    StrangeSorter strangeSorter = new StrangeSorter();
+      StrangeSorterBartek strangeSorter = new StrangeSorterBartek();
     //when
     strangeSorter.setStrangeInterface(strangeInterface);
     //then
