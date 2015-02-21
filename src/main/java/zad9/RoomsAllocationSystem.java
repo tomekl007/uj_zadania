@@ -1,7 +1,5 @@
 package zad9;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
 import java.util.*;
 
 /**
@@ -258,13 +256,15 @@ class RoomsAllocationSystem implements RoomsAllocationSystemInterface {
             room.roomRank = roomRank;
         }
         
-        roomsAvailable.sort(new Comparator<Room>() {
+        
+        Collections.sort(roomsAvailable, new Comparator<Room>() {
             @Override
             public int compare(Room o1, Room o2) {
                 return o1.roomRank - o2.roomRank;
             }
         });
-        
+
+
         for(Room room : roomsAvailable){
             result.add(room.id);
         }
