@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 
 public class DisplaySystem implements DisplayTimeExt {
@@ -24,9 +23,11 @@ public class DisplaySystem implements DisplayTimeExt {
     class CountDownMessages extends TimerTask{
         @Override
         public void run() {
-            displays.values()
-                    .forEach(display -> display.messagesToDisplay
-                            .forEach(message -> message.holdTime--));
+            for(Display display : displays.values()){
+                for(Message message : display.messagesToDisplay){
+                    message.holdTime--;
+                }
+            }
         }
     }
     
@@ -119,28 +120,32 @@ public class DisplaySystem implements DisplayTimeExt {
         if (validateDisplays(displayID)) {
             return null;
         }
-        List<Message> messagesToDisplay = displays
+
+        List<Message> messagesToDisplay = new LinkedList<Message>();
+        for(Message message : displays
                 .get(displayID)
-                .messagesToDisplay
-                .stream()
-                .filter(message -> message.holdTime > 0)
-                .collect(Collectors.toList());
+                .messagesToDisplay){
+            if(message.holdTime > 0){
+                messagesToDisplay.add(message);
+            }
+        }
         
         int size = messagesToDisplay.size();
 
         if (size > displays.get(displayID).rows) {
-            List<String> subList = messagesToDisplay.subList(size - displays.get(displayID).rows, size)
-                    .stream()
-                    .map(m -> m.message)
-                    .collect(Collectors.toList());
+            List<Message> subListMessage = messagesToDisplay.subList(size - displays.get(displayID).rows, size);
+            List<String> subList = new LinkedList<String>();
+            for(Message message : subListMessage){
+                subList.add(message.message);
+            }
             
             return subList.toArray(new String[subList.size()]);
         }
-        return messagesToDisplay
-                .stream()
-                .map(m -> m.message)
-                .collect(Collectors.toList())
-                .toArray(new String[messagesToDisplay.size()]);
+        List<String> subList = new LinkedList<String>();
+        for(Message message : messagesToDisplay){
+            subList.add(message.message);
+        }
+        return subList.toArray(new String[messagesToDisplay.size()]);
     }
 
     @Override

@@ -88,7 +88,7 @@ class RoomsAllocationSystem implements RoomsAllocationSystemInterface {
                 System.out.println("key, value : " + key + ", " + value);
                 boolean v = false;
                 if (value != null){
-                    v = (boolean)value;
+                    v = (Boolean)value;
                 }
                 System.out.println("key, value : " + key + ", " + v);
                 if(!attributes.containsKey(key) || !v) return false;

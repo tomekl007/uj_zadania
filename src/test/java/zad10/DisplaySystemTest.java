@@ -101,6 +101,7 @@ public class DisplaySystemTest {
         //then
         assertThat(messages[0]).isEqualTo(secondMessage);
         assertThat(messages[1]).isEqualTo(thirdMessage);
+        System.out.println(displaySystem.displays.get(displayId).messagesToDisplay);
     }
 
 }

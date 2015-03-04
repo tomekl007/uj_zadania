@@ -88,9 +88,9 @@ public class RoomsAllocationSystemTest {
         this.instance.addAttributeToRoom("a1", CORRECT_ROOM_2, true);
         this.instance.addAttributeToRoom("a2", CORRECT_ROOM_2, 100);
 
-        final Map<String, Boolean> requiredAttributes = new HashMap<>();
+        final Map<String, Boolean> requiredAttributes = new HashMap<String, Boolean>();
         requiredAttributes.put("a1", true);
-        final Map<String, Integer> attributesLimit = new HashMap<>();
+        final Map<String, Integer> attributesLimit = new HashMap<String, Integer>();
         attributesLimit.put("a2", 5);
 
         // execute
@@ -136,11 +136,11 @@ public class RoomsAllocationSystemTest {
         this.instance.addAttributeToRoom(ATTR_SALA_NASLONECZNIONA, ROOM_B, true);
         this.instance.addAttributeToRoom(ATTR_LICZBA_WYMIAN, ROOM_B, 5);
 
-        final Map<String, Integer> weights = new HashMap<>();
+        final Map<String, Integer> weights = new HashMap<String, Integer>();
         weights.put(ATTR_ZIELONE_SCIANY, 20);
         weights.put(ATTR_SALA_NASLONECZNIONA, 30);
         weights.put(ATTR_LICZBA_WYMIAN, 10);
-        final Map<String, Integer> limits = new HashMap<>();
+        final Map<String, Integer> limits = new HashMap<String, Integer>();
         limits.put(ATTR_LICZBA_WYMIAN, 5);
 
         // execute

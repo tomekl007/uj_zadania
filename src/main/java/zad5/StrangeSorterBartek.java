@@ -6,7 +6,7 @@ import java.util.*;
  * Created by tomasz.lelek on 07/02/15.
  */
 public class StrangeSorterBartek implements StrangeSorterInterface {
-    final protected List exceptions = new ArrayList<>();
+    final protected List exceptions = new ArrayList();
 
     public StrangeSorterBartek() {
     }
