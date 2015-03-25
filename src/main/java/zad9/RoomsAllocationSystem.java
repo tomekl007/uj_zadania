@@ -91,7 +91,12 @@ class RoomsAllocationSystem implements RoomsAllocationSystemInterface {
                     v = (Boolean)value;
                 }
                 System.out.println("key, value : " + key + ", " + v);
-                if(!attributes.containsKey(key) || !v) return false;
+                if(attributes.containsKey(key) && value.equals(requiredAttributes.get(key)) ){
+                    //ignore
+                }else if(attributes.containsKey(key) && !value.equals(requiredAttributes.get(key)) ){
+                    return false;
+                }
+                else if(!attributes.containsKey(key) || !v) return false;
             }
             return true;
         }
@@ -236,6 +241,9 @@ class RoomsAllocationSystem implements RoomsAllocationSystemInterface {
     // Mamy nastepujace podlegające sortowaniu sale:
     
     private List<String> sortByAttributeWeight(List<Room> roomsAvailable, Map<String, Integer> attributesLimit, Map<String, Integer> attributesWeight) {
+        System.out.println("--> " + roomsAvailable);
+        System.out.println("--> " + attributesLimit);
+        System.out.println("-->" + attributesWeight);
         List<String> result = new LinkedList<String>();
         List<Attribute> attributes = new LinkedList<Attribute>();
         for( Map.Entry<String, Integer> weight : attributesWeight.entrySet()){

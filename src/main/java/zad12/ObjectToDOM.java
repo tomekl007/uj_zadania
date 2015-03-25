@@ -8,15 +8,12 @@ import org.w3c.dom.Text;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import java.lang.reflect.Field;
 
 /**
  * Created by tomasz.lelek on 18/03/15.
  */
-public class ObjectToDOM implements ObjectToDOMInterface {
+class ObjectToDOM implements ObjectToDOMInterface {
 
     private Document doc;
 
