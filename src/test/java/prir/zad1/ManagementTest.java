@@ -2,6 +2,7 @@ package prir.zad1;
 
 import org.junit.Test;
 
+import java.util.Date;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -9,19 +10,27 @@ import static org.junit.Assert.*;
 
 public class ManagementTest {
     @Test
-    public void shouldProcessEventForOneListener() {
+    public void shouldProcessEventForOneListener() throws InterruptedException {
         //given
         Management management = new Management();
         ProcessingEngineInterface processingEngineInterface = new ProcessingEngineInterface() {
             @Override
-            public boolean isItImportant(EventInterface ei) {
+            public boolean isItImportant(EventInterface ei)
+            {
+                System.out.println("is important" + new Date().getTime());
                 return true;
             }
 
             @Override
             public void processEvent(EventInterface ei) {
                 //then
-                System.out.println("processing " + ei);
+                System.out.println("processing " + ei + " " + new Date().getTime());
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("still processing " + ei + " " + new Date().getTime());
                 assertTrue(true);
             }
         };
@@ -29,13 +38,14 @@ public class ManagementTest {
         ProcessingEngineInterface processingEngineInterfaceNotImportant = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei) {
+                System.out.println("is not important " + new Date().getTime());
                 return false;
             }
 
             @Override
             public void processEvent(EventInterface ei) {
                 //then
-                System.out.println("not processing " + ei);
+                System.out.println("not processing " + ei + " " + new Date().getTime());
                 assertTrue(false);
             }
         };
@@ -45,6 +55,11 @@ public class ManagementTest {
         //when
         management.newEvent(new EventInterface() {
         });
+        management.newEvent(new EventInterface() {
+        });
+        management.newEvent(new EventInterface() {
+        });
+        Thread.sleep(20000);
     }
 
     @Test
@@ -124,25 +139,12 @@ public class ManagementTest {
         //given
         Executor executor = Executors.newFixedThreadPool(10);
         final Management management = new Management();
-        ProcessingEngineInterface processingEngineInterface = new ProcessingEngineInterface() {
-            @Override
-            public boolean isItImportant(EventInterface ei) {
-                System.out.println("is important ? in : " + this);
-                return true;
-            }
 
-            @Override
-            public void processEvent(EventInterface ei) {
-                //then
-                System.out.println("processing " + ei);
-                assertTrue(true);
-            }
-        };
 
         ProcessingEngineInterface blockingProcessingEngineInterface = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei) {
-                System.out.println("is important ? in : " + ei);
+                System.out.println("is important2 ? in : " + ei);
                 return true;
             }
 
@@ -150,8 +152,8 @@ public class ManagementTest {
             public void processEvent(EventInterface ei) {
                 //then
                 try {
-                    System.out.println("processing " + ei);
-                    Thread.sleep(10000);
+                    System.out.println("processing2 " + ei);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     System.err.println("e : " + e);
                     e.printStackTrace();
@@ -167,6 +169,7 @@ public class ManagementTest {
         for (int i = 0; i < 10; i++) {
             management.newEvent(new EventInterface() {});
         }
+        Thread.sleep(10000);
     }
 
 
