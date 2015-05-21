@@ -1,13 +1,11 @@
 package prir.prir3;
 
+import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Created by tomasz.lelek on 20/05/15.
- */
-public class Game implements GameInterface {
+public class Game implements GameInterface, Serializable {
 
     private static final AtomicLong playerCounter = new AtomicLong();
     List<SpecificGame> games = new LinkedList<>();
@@ -126,7 +124,6 @@ public class Game implements GameInterface {
 
     class SpecificGame {
         List<Player> players = new LinkedList<>();
-        private int playerId;
         int phase = 1;
 
         boolean couldJoinToGame() {
