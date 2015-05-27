@@ -1,20 +1,22 @@
 package prir.zad1;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 class Management implements ManagementInterface {
     public static final int N_THREADS = 16;
-    private BlockingDeque<EventInterface> blockingDeque = new LinkedBlockingDeque<>();
+    private Lock unregisterLock = new ReentrantLock();
     private Executor executor = Executors.newFixedThreadPool(N_THREADS);
-    private Map<ProcessingEngineInterface, Processing> processingEngines = new HashMap<>();
-
+    private Map<ProcessingEngineInterface, Processing> processingEngines = new ConcurrentHashMap<>();
+    private LinkedBlockingQueue<EventInterface> eventsToCheck = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<EventInterface> eventsToProcess = new LinkedBlockingQueue<>();
+    AtomicInteger eventIdGenerator = new AtomicInteger();
 
     @Override
     public void registerProcessingEngine(final ProcessingEngineInterface pei) {
@@ -23,35 +25,44 @@ class Management implements ManagementInterface {
 
     @Override
     public void deregisterProcessingEngine(ProcessingEngineInterface pei) {
+        unregisterLock.lock();
         processingEngines.remove(pei);
+        unregisterLock.unlock();
+
     }
 
     @Override
     public void newEvent(final EventInterface ei) {
-        blockingDeque.offerFirst(ei);
-        final EventInterface event = blockingDeque.pollLast();
-        for (final Processing processing : processingEngines.values()) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    processing.isImportantLock.lock();
-                    boolean result = processing.pei.isItImportant(event);
-                    if (result) {
-                        processing.isImportantLock.unlock();
-                        executor.execute(new Runnable() {
-                            @Override
-                            public void run() {
-                                processing.proccesEventLock.lock();
-                                processing.pei.processEvent(event);
-                                processing.proccesEventLock.unlock();
+        int eventId = eventIdGenerator.incrementAndGet();
+        eventsToCheck.add(ei);
+        try {
+            if(unregisterLock.tryLock(1, TimeUnit.DAYS)) {
+                for (final Processing processing : processingEngines.values()) {
+                    executor.execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            processing.isImportantLock.lock();
+                            boolean result = processing.pei.isItImportant(ei);
+                            if (result) {
+                                processing.isImportantLock.unlock();
+                                executor.execute(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        processing.proccesEventLock.lock();
+                                        processing.pei.processEvent(ei);
+                                        processing.proccesEventLock.unlock();
+                                    }
+                                });
+                            } else {
+                                processing.isImportantLock.unlock();
                             }
-                        });
-                    }else{
-                        processing.isImportantLock.unlock();
-                    }
-                }
-            });
+                        }
+                    });
 
+                }
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
     }
 }

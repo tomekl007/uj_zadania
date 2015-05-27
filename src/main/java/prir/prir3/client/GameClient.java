@@ -10,9 +10,6 @@ import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
-/**
- * Created by tomasz.lelek on 21/05/15.
- */
 public class GameClient {
     public static void main(String[] args) throws RemoteException, NotBoundException, MalformedURLException, NamingException {
         String host = "localhost";

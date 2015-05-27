@@ -3,6 +3,7 @@ package prir.prir3;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Game implements GameInterface, Serializable {
@@ -32,6 +33,8 @@ public class Game implements GameInterface, Serializable {
     @Override
     public boolean isGameReady(long uid) throws RemoteException {
         for (SpecificGame game : games) {
+            int playersInTeam = game.players.size();
+            System.out.println("players in team : " + playersInTeam);
             for (Player player : game.players) {
                 if (player.playerId == uid) {
                     return true;
@@ -123,7 +126,7 @@ public class Game implements GameInterface, Serializable {
     }
 
     class SpecificGame {
-        List<Player> players = new LinkedList<>();
+        List<Player> players = Collections.synchronizedList(new LinkedList<Player>());
         int phase = 1;
 
         boolean couldJoinToGame() {
