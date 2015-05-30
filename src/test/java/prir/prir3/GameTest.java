@@ -3,6 +3,9 @@ package prir.prir3;
 import org.junit.Test;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -210,4 +213,46 @@ public class GameTest {
         
     }
 
+    @Test
+    public void getButLast(){
+        int uidR2 = 1;
+        
+        GameInterface.Move mv1 = new GameInterface.Move();
+        mv1.code = 202;
+        mv1.phase = 3;
+        mv1.uid = uidR2;
+
+        GameInterface.Move mv2 = new GameInterface.Move();
+        mv2.code = 202;
+        mv2.phase = 3;
+        mv2.uid = 2;
+        
+        ArrayList<GameInterface.Move> moves = new ArrayList<>();
+        moves.add(mv1);
+        moves.add(mv2);
+        GameInterface.Move lastWithoutUserId = new Game().getLastWithoutUserId(moves, moves, uidR2);
+        assertEquals(lastWithoutUserId.uid, 2);
+        assertEquals(moves.size(), 1);
+
+    }
+
+    @Test
+    public void getButLastSecond(){
+        int uidR2 = 1;
+
+        GameInterface.Move mv1 = new GameInterface.Move();
+        mv1.code = 202;
+        mv1.phase = 3;
+        mv1.uid = uidR2;
+
+
+        ArrayList<GameInterface.Move> moves = new ArrayList<>();
+        moves.add(mv1);
+        GameInterface.Move lastWithoutUserId = new Game().getLastWithoutUserId(moves, moves, uidR2);
+        assertEquals(lastWithoutUserId, null);
+        assertEquals(moves.size(), 1);
+
+    }
+
+    
 }

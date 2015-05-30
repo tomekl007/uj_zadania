@@ -12,9 +12,9 @@ class ManagmentSecondTerm implements ManagementInterface {
     public static final int N_THREADS = 16;
     private Executor executor = Executors.newFixedThreadPool(N_THREADS);
     private AtomicInteger processingEngineIdGenerator = new AtomicInteger();
-    private HashMap<Integer, ProcessingEngineInterface> processorsMap = new HashMap<>();
-    private HashMap<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck = new HashMap<>();
-    private HashMap<Integer, LinkedBlockingQueue<EventInterface>> messagesReadyToProcess = new HashMap<>();
+    private Map<Integer, ProcessingEngineInterface> processorsMap = new HashMap<>();
+    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck = new HashMap<>();
+    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesReadyToProcess = new HashMap<>();
 
 
     @Override
@@ -76,7 +76,7 @@ class IsRegisterChecker implements Runnable {
     @Override
     public void run() {
         try {
-            while (allProcessingEngines.containsValue(processingEngineInterface)) {
+            while (allProcessingEngines.containsValue(processingEngineInterface)) {//is still registered
                 EventInterface eventInterface = messagesToCheck.take();
                 if (processingEngineInterface.isItImportant(eventInterface)) {
                     messagesToProcess.put(eventInterface);

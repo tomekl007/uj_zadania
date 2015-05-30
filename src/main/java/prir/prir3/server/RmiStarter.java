@@ -28,6 +28,6 @@ public class RmiStarter extends UnicastRemoteObject{
 
         Naming.rebind(REGISTRY_NAME, new Game());
         System.out.println("Server running...");
-        Thread.sleep(100000);
+        Thread.sleep(1000000000);
     }
 }

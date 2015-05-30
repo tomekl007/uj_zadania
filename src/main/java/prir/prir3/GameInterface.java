@@ -20,7 +20,17 @@ public interface GameInterface extends Remote {
 		private static final long serialVersionUID = -4716482352286627434L;
 		public long uid;
 		public long code;
-		public int phase;
+
+        @Override
+        public String toString() {
+            return "Move{" +
+                    "uid=" + uid +
+                    ", code=" + code +
+                    ", phase=" + phase +
+                    '}';
+        }
+
+        public int phase;
 	}
 		
 	/**

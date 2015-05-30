@@ -40,7 +40,10 @@ public class PMO_Client {
 		}
 	}
 	
-	private static String moveToString( GameInterface.Move mv ) { 
+	private static String moveToString( GameInterface.Move mv, Long id ) {
+        if(mv == null ){
+            return "empty move for id !" + id ;
+        }
 		return "Ruch : uid = " + mv.uid + " phase = " + mv.phase + " code = " + mv.code ; 
 	}
 
@@ -58,6 +61,8 @@ public class PMO_Client {
 		}
 
 		private boolean movesEqual(GameInterface.Move m1, GameInterface.Move m2) {
+            if(m1 == null || m2 == null) return false;
+
 			if (m1.code != m2.code)
 				return false;
 			if (m1.phase != m2.phase)
@@ -208,7 +213,7 @@ public class PMO_Client {
 					
 					try {
 						gi.move(mv);
-						PMO_SOUT.println( "Gracz uid " + id + " wyslal ruch " + moveToString( mv ));
+						PMO_SOUT.println( "Gracz uid " + id + " wyslal ruch " + moveToString( mv, id ));
 					} catch (RemoteException e) {
 						PMO_SOUT.printlnErr("Poprawne wywolanie move() spowodowalo wyjatek ");
 					}
@@ -224,7 +229,7 @@ public class PMO_Client {
 					try {
 						for (int i = 0; i < PLAYERS_IN_TEAM - 1; i++) {
 							mv = gi.getMove(id); // odebrany ruch przeciwnika
-							PMO_SOUT.println( "Gracz uid " + id + " odebral ruch " + moveToString( mv ));
+							PMO_SOUT.println( "Gracz uid " + id + " odebral ruch " + moveToString( mv, id ));
 
 							boolean found = false;
 							outside:
@@ -241,8 +246,8 @@ public class PMO_Client {
 								}
 							}
 							if (!found) {
-								PMO_SOUT.printlnErr("Odebrany przez uid " + id + " ruch nie figuruje na liscie wyslanych posuniec przeciwnikow");
-								if ( mv.uid == id ) {
+								PMO_SOUT.printlnErr("Odebrany przez uid " + id + " ruch " + moveToString(mv, id) + " nie figuruje na liscie wyslanych posuniec przeciwnikow");
+ 								if ( mv.uid == id ) {
 									PMO_SOUT.printlnErr( "Do gracza wysylane sa jego wlasne posuniecia");
 								}
 							}
@@ -252,7 +257,7 @@ public class PMO_Client {
 												// powinno byc NULL
 
 						if (mv != null) {
-							PMO_SOUT.printlnErr("Odebrano dla uid " + id + " ruch rozny od null, choc posuniecia powinny juz sie skonczyc. Odebrano " + moveToString( mv ));
+							PMO_SOUT.printlnErr("Odebrano dla uid " + id + " ruch rozny od null, choc posuniecia powinny juz sie skonczyc. Odebrano " + moveToString( mv, id ));
 						}
 
 					} // try
