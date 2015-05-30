@@ -55,7 +55,7 @@ public class Start {
 			Start.printTestStart( " - 1 - " );
 			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
-			mtmi.setNumberOfAvailableThreads( 2 );
+			mtmi.setNumberOfAvailableThreads( 2 );//todo what does it mean ?
 			PMO_TaskHelper.maxTasksLimit.set( 2 );
 			
 			int[] threadsPerLevel = new int[] { 1, 1 };
