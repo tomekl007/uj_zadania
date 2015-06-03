@@ -21,11 +21,13 @@ public class GeneratorClient {
   
      c.register((short)1, 10000, ih);
      c.register((short)2, 5000, ih2);
-     c.register((short)3, 4000, ih3);
+     c.register((short)3, 1, ih3);
+     c.register((short)4, 4000, ih3);
+     c.register((short)5, 4000, ih3);
+     c.register((short)6, 4000, ih3);
      System.out.println("get id : "+ ih.value);
      Thread.sleep(1000);
      c.hello(ih3.value);
-     Thread.sleep(5000);
      rangeHolder rh = new rangeHolder();
      c.best_range(rh);
      System.out.println("rh.from " +  rh.value.from);

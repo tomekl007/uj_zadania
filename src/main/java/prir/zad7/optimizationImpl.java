@@ -40,29 +40,59 @@ public class optimizationImpl extends optimizationPOA {
 
     @Override
     public void best_range(rangeHolder r) {//tod test it properly
-        short startRange=-1;
-        short endRange=255;
-        int lengthOfRange;
-        Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
+        RangeClass rangeClass = bestRange(clientDataMap);
         
-        short index = 0;
+        r.value = new range(rangeClass.bestStartRange, rangeClass.bestEndRange);
+
+    }
+
+
+    public RangeClass bestRange(Map<Short, ClientData> clientDataMap) {//tod test it properly
+        short startRange=0;
+        short endRange=0;
+        int lengthOfRange = -1;
+
+        short bestStartRange = 0;
+        short bestEndRange = 0;
+        int bestLengthOfRange = -1;
+        Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
+
+        short index = 1;
         for(Map.Entry<Short, ClientData> entry : entries){
-            if(entry.getValue().working && startRange != -1){
+            if(!entry.getValue().working) {
+                if(lengthOfRange > bestLengthOfRange){
+                    bestLengthOfRange = lengthOfRange;
+                    bestStartRange = startRange;
+                    bestEndRange = endRange;
+                }
+                startRange = 0;
+                endRange = 0;
+                lengthOfRange = -1;
+            }else if(entry.getValue().working && startRange != 0){
                 endRange = index;
             }else if(entry.getValue().working){
                 startRange = index;
                 endRange = index;
-            }else if(! entry.getValue().working) {
-                startRange = index;
-                endRange = index;
             }
-            
+            lengthOfRange = endRange - startRange;
+
             index++;
         }
-        r.value = new range(startRange, endRange);
+        if(lengthOfRange > bestLengthOfRange){
+            bestStartRange = startRange;
+            bestEndRange = endRange;
+        }
+
+
+
+        return new RangeClass(bestStartRange, bestEndRange);
     }
+
+
+
 }
 
+        
 class ClientData{
     @Override
     public String toString() {
@@ -114,6 +144,19 @@ class CountAvailability implements Runnable{
                 System.out.println("decrement for : "+ entry);
             }
         }
+    }
+}
+
+class RangeClass{
+
+
+    public final short bestStartRange;
+    public final short bestEndRange;
+
+    public RangeClass(short bestStartRange, short bestEndRange) {
+
+        this.bestStartRange = bestStartRange;
+        this.bestEndRange = bestEndRange;
     }
 }
 
