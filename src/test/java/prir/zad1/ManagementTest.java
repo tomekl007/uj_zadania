@@ -12,7 +12,7 @@ public class ManagementTest {
     @Test
     public void shouldProcessEventForOneListener() throws InterruptedException {
         //given
-        ManagmentSecondTerm ManagmentSecondTerm = new ManagmentSecondTerm();
+        Management Management = new Management();
         ProcessingEngineInterface processingEngineInterface = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei)
@@ -50,14 +50,14 @@ public class ManagementTest {
             }
         };
 
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterface);
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterfaceNotImportant);
+        Management.registerProcessingEngine(processingEngineInterface);
+        Management.registerProcessingEngine(processingEngineInterfaceNotImportant);
         //when
-        ManagmentSecondTerm.newEvent(new EventInterface() {
+        Management.newEvent(new EventInterface() {
         });
-        ManagmentSecondTerm.newEvent(new EventInterface() {
+        Management.newEvent(new EventInterface() {
         });
-        ManagmentSecondTerm.newEvent(new EventInterface() {
+        Management.newEvent(new EventInterface() {
         });
         Thread.sleep(20000);
     }
@@ -65,7 +65,7 @@ public class ManagementTest {
     @Test
     public void shouldProcessEventForTwoListener() {
         //given
-        ManagmentSecondTerm ManagmentSecondTerm = new ManagmentSecondTerm();
+        Management Management = new Management();
         ProcessingEngineInterface processingEngineInterface = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei) {
@@ -79,12 +79,12 @@ public class ManagementTest {
                 assertTrue(true);
             }
         };
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterface);
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterface);
+        Management.registerProcessingEngine(processingEngineInterface);
+        Management.registerProcessingEngine(processingEngineInterface);
         //when
-        ManagmentSecondTerm.newEvent(new EventInterface() {
+        Management.newEvent(new EventInterface() {
         });
-        ManagmentSecondTerm.newEvent(new EventInterface() {
+        Management.newEvent(new EventInterface() {
         });
     }
 
@@ -92,7 +92,7 @@ public class ManagementTest {
     public void shouldProcessEventForTwoListenerFromTwoThreads() throws InterruptedException {
         //given
         Executor executor = Executors.newFixedThreadPool(10);
-        final ManagmentSecondTerm ManagmentSecondTerm = new ManagmentSecondTerm();
+        final Management Management = new Management();
         ProcessingEngineInterface processingEngineInterface = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei) {
@@ -106,14 +106,14 @@ public class ManagementTest {
                 assertTrue(true);
             }
         };
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterface);
-        ManagmentSecondTerm.registerProcessingEngine(processingEngineInterface);
+        Management.registerProcessingEngine(processingEngineInterface);
+        Management.registerProcessingEngine(processingEngineInterface);
         //when
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
                 for (int i = 0; i < 10; i++) {
-                    ManagmentSecondTerm.newEvent(new EventInterface() {
+                    Management.newEvent(new EventInterface() {
                     });
                 }
             }
@@ -122,7 +122,7 @@ public class ManagementTest {
             @Override
             public void run() {
                 for (int i = 0; i < 10; i++) {
-                    ManagmentSecondTerm.newEvent(new EventInterface() {
+                    Management.newEvent(new EventInterface() {
                     });
                 }
             }
@@ -138,7 +138,7 @@ public class ManagementTest {
     public void shouldProcessEventForTwoListenerFromTwoThreadsWhenFirstListenerIsBlockingOnProcessEvent() throws InterruptedException {
         //given
         Executor executor = Executors.newFixedThreadPool(10);
-        final ManagmentSecondTerm ManagmentSecondTerm = new ManagmentSecondTerm();
+        final Management Management = new Management();
 
 
         ProcessingEngineInterface blockingProcessingEngineInterface = new ProcessingEngineInterface() {
@@ -163,11 +163,11 @@ public class ManagementTest {
             }
         };
         //ManagementMichal.registerProcessingEngine(processingEngineInterface);
-        ManagmentSecondTerm.registerProcessingEngine(blockingProcessingEngineInterface);
+        Management.registerProcessingEngine(blockingProcessingEngineInterface);
         //when
 
         for (int i = 0; i < 10; i++) {
-            ManagmentSecondTerm.newEvent(new EventInterface() {});
+            Management.newEvent(new EventInterface() {});
         }
         Thread.sleep(10000);
     }
@@ -177,7 +177,7 @@ public class ManagementTest {
     public void shouldProcessEventForTwoListenerFromTwoThreadsAndForOneThreadAfterDeregistering() throws InterruptedException {
         //given
         Executor executor = Executors.newFixedThreadPool(10);
-        final ManagmentSecondTerm ManagmentSecondTerm = new ManagmentSecondTerm();
+        final Management Management = new Management();
         ProcessingEngineInterface firstProcessingEngine = new ProcessingEngineInterface() {
             @Override
             public boolean isItImportant(EventInterface ei) {
@@ -206,8 +206,8 @@ public class ManagementTest {
             }
         };
 
-        ManagmentSecondTerm.registerProcessingEngine(firstProcessingEngine);
-        ManagmentSecondTerm.registerProcessingEngine(secondProcessingEngine);
+        Management.registerProcessingEngine(firstProcessingEngine);
+        Management.registerProcessingEngine(secondProcessingEngine);
         //when
         Runnable runnable = new Runnable() {
             @Override
@@ -218,7 +218,7 @@ public class ManagementTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    ManagmentSecondTerm.newEvent(new EventInterface() {
+                    Management.newEvent(new EventInterface() {
                     });
                 }
             }
@@ -232,7 +232,7 @@ public class ManagementTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    ManagmentSecondTerm.newEvent(new EventInterface() {
+                    Management.newEvent(new EventInterface() {
                     });
                 }
             }
@@ -242,7 +242,7 @@ public class ManagementTest {
 
         Thread.sleep(200);
         System.out.println("unregister second");
-        ManagmentSecondTerm.deregisterProcessingEngine(secondProcessingEngine);
+        Management.deregisterProcessingEngine(secondProcessingEngine);
         Thread.sleep(1000);
 
     }

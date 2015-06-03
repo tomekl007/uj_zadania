@@ -1,82 +1,118 @@
 package prir.zad1;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 class Management implements ManagementInterface {
     public static final int N_THREADS = 16;
-    private Lock unregisterLock = new ReentrantLock();
     private Executor executor = Executors.newFixedThreadPool(N_THREADS);
-    private Map<ProcessingEngineInterface, Processing> processingEngines = new ConcurrentHashMap<>();
-    private LinkedBlockingQueue<EventInterface> eventsToCheck = new LinkedBlockingQueue<>();
-    private LinkedBlockingQueue<EventInterface> eventsToProcess = new LinkedBlockingQueue<>();
-    AtomicInteger eventIdGenerator = new AtomicInteger();
+    private AtomicInteger processingEngineIdGenerator = new AtomicInteger();
+    private Map<Integer, ProcessingEngineInterface> processorsMap = new HashMap<>();
+    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck = new HashMap<>();
+    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesReadyToProcess = new HashMap<>();
+
 
     @Override
-    public void registerProcessingEngine(final ProcessingEngineInterface pei) {
-        processingEngines.put(pei, new Processing(pei));
+    public void registerProcessingEngine(ProcessingEngineInterface pei) {
+        int peiId = processingEngineIdGenerator.incrementAndGet();
+        LinkedBlockingQueue<EventInterface> messagesToCheck = new LinkedBlockingQueue<>();
+        LinkedBlockingQueue<EventInterface> messagesReadyToProcess = new LinkedBlockingQueue<>();
+        processorsMap.put(peiId, pei);
+        this.messagesToCheck.put(peiId, messagesToCheck);
+        this.messagesReadyToProcess.put(peiId, messagesReadyToProcess);
+        
+        executor.execute(new IsImportantChecker(peiId, processorsMap, this.messagesToCheck, this.messagesReadyToProcess, pei));
+        executor.execute(new ProcessMessage(peiId, processorsMap, this.messagesReadyToProcess, pei));
     }
 
     @Override
     public void deregisterProcessingEngine(ProcessingEngineInterface pei) {
-        unregisterLock.lock();
-        processingEngines.remove(pei);
-        unregisterLock.unlock();
-
+        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processorsMap.entrySet()) {
+            if (pei.equals(entry.getValue())){
+                int procId = entry.getKey();
+                processorsMap.remove(procId);
+                messagesToCheck.remove(procId);
+                messagesReadyToProcess.remove(procId);
+            }
+        }
     }
 
     @Override
-    public void newEvent(final EventInterface ei) {
-        int eventId = eventIdGenerator.incrementAndGet();
-        eventsToCheck.add(ei);
-        try {
-            if(unregisterLock.tryLock(1, TimeUnit.DAYS)) {
-                for (final Processing processing : processingEngines.values()) {
-                    executor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            processing.isImportantLock.lock();
-                            boolean result = processing.pei.isItImportant(ei);
-                            if (result) {
-                                processing.isImportantLock.unlock();
-                                executor.execute(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        processing.proccesEventLock.lock();
-                                        processing.pei.processEvent(ei);
-                                        processing.proccesEventLock.unlock();
-                                    }
-                                });
-                            } else {
-                                processing.isImportantLock.unlock();
-                            }
-                        }
-                    });
-
-                }
+    public void newEvent(EventInterface ei) {
+        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processorsMap.entrySet()) {
+            Integer key = entry.getKey();
+            BlockingQueue<EventInterface> preQueue = messagesToCheck.get(key);
+            try {
+                preQueue.put(ei);
+            } catch (InterruptedException e) {
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
     }
 }
 
-class Processing {
+
+class IsImportantChecker implements Runnable {
+    private int peId;
+    private ProcessingEngineInterface processingEngineInterface;
+    private final Map<Integer, ProcessingEngineInterface> allProcessingEngines;
+    LinkedBlockingQueue<EventInterface> messagesToCheck;
+    LinkedBlockingQueue<EventInterface> messagesToProcess;
+
+    public IsImportantChecker(int peId, Map<Integer, ProcessingEngineInterface> allProcessingEngines,
+                              Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck,
+                              Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToProcess, 
+                              ProcessingEngineInterface pei) {
+        this.peId = peId;
+        this.allProcessingEngines = allProcessingEngines;
+        this.messagesToCheck = messagesToCheck.get(peId);
+        this.messagesToProcess = messagesToProcess.get(peId);
+        this.processingEngineInterface = pei;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (allProcessingEngines.containsValue(processingEngineInterface)) {//is still registered
+                EventInterface eventInterface = messagesToCheck.take();
+                if (processingEngineInterface.isItImportant(eventInterface)) {
+                    messagesToProcess.put(eventInterface);
+                }
+            }
+        } catch (InterruptedException e) {
+        }
+    }
+}
 
 
-    ProcessingEngineInterface pei;
-    Lock isImportantLock;
-    Lock proccesEventLock;
 
-    public Processing(ProcessingEngineInterface pei) {
-        isImportantLock = new ReentrantLock();
-        proccesEventLock = new ReentrantLock();
-        this.pei = pei;
+class ProcessMessage implements Runnable {
+    private final ProcessingEngineInterface processingEngineInterface;
+    private int peId;
+    private final Map<Integer, ProcessingEngineInterface> allProcessingEngines;
+    LinkedBlockingQueue<EventInterface> messagesToProcess;
+
+    public ProcessMessage(int peId, Map<Integer, ProcessingEngineInterface> allProcessingEngines,
+                          Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToProcess,
+                          ProcessingEngineInterface pei) {
+        this.peId = peId;
+        this.allProcessingEngines = allProcessingEngines;
+        this.messagesToProcess = messagesToProcess.get(peId);
+        this.processingEngineInterface = pei;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (allProcessingEngines.containsValue(processingEngineInterface)) {
+                EventInterface ei = messagesToProcess.take();
+                processingEngineInterface.processEvent(ei);
+            }
+        } catch (InterruptedException e) {
+        }
     }
 }

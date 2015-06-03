@@ -24,7 +24,7 @@ public class Start {
 		
 	// jeden przetwarzajacy kontra 10 zdarzen do przetworzenia
 	private static class Test1 implements Runnable {
-		ManagementInterface mi = new ManagmentSecondTerm();
+		ManagementInterface mi = new Management();
 		ProcessingEngine pe = new ProcessingEngine( "Jedny", new DecisionInterface() {
 						
 			@Override
@@ -69,7 +69,7 @@ public class Start {
 	
 	// dwoch przetwarzajacych kontra 10 zdarzen do przetworzenia po 5 dla kazdego
 	private static class Test2 implements Runnable {
-		ManagementInterface mi = new ManagmentSecondTerm();
+		ManagementInterface mi = new Management();
 		ProcessingEngine peE = new ProcessingEngine( "Even", new DecisionInterface() {
 						
 			@Override
@@ -126,7 +126,7 @@ public class Start {
 	
 	// dwoch przetwarzajacych kontra 10 zdarzen, przy 6-tym nastepuje odrejestrowanie jednego z nich
 	private static class Test3 implements Runnable {
-		ManagementInterface mi = new ManagmentSecondTerm();
+		ManagementInterface mi = new Management();
 		ProcessingEngine peE = new ProcessingEngine( "ALL", new DecisionInterface() {
 						
 			@Override
@@ -191,7 +191,7 @@ public class Start {
 	
 	// dwoch przetwarzajacych kontra 10 zdarzen, przy 6-tym nastepuje zarejestrowanie jednego z nich
 	private static class Test4 implements Runnable {
-		ManagementInterface mi = new ManagmentSecondTerm();
+		ManagementInterface mi = new Management();
 		ProcessingEngine peE = new ProcessingEngine( "ALL", new DecisionInterface() {
 						
 			@Override
