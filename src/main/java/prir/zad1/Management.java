@@ -12,8 +12,8 @@ class Management implements ManagementInterface {
     public static final int N_THREADS = 16;
     private Executor executor = Executors.newFixedThreadPool(N_THREADS);
     private AtomicInteger processingEngineIdGenerator = new AtomicInteger();
-    private Map<Integer, ProcessingEngineInterface> processorsMap = new HashMap<>();
-    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck = new HashMap<>();
+    private Map<Integer, ProcessingEngineInterface> processingEngines = new HashMap<>();
+    private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheckIsImportant = new HashMap<>();
     private Map<Integer, LinkedBlockingQueue<EventInterface>> messagesReadyToProcess = new HashMap<>();
 
 
@@ -22,35 +22,47 @@ class Management implements ManagementInterface {
         int peiId = processingEngineIdGenerator.incrementAndGet();
         LinkedBlockingQueue<EventInterface> messagesToCheck = new LinkedBlockingQueue<>();
         LinkedBlockingQueue<EventInterface> messagesReadyToProcess = new LinkedBlockingQueue<>();
-        processorsMap.put(peiId, pei);
-        this.messagesToCheck.put(peiId, messagesToCheck);
+        processingEngines.put(peiId, pei);
+        this.messagesToCheckIsImportant.put(peiId, messagesToCheck);
         this.messagesReadyToProcess.put(peiId, messagesReadyToProcess);
-        
-        executor.execute(new IsImportantChecker(peiId, processorsMap, this.messagesToCheck, this.messagesReadyToProcess, pei));
-        executor.execute(new ProcessMessage(peiId, processorsMap, this.messagesReadyToProcess, pei));
+
+        executor.execute(new IsImportantChecker(peiId, processingEngines, this.messagesToCheckIsImportant, this.messagesReadyToProcess, pei));
+        executor.execute(new ProcessMessage(peiId, processingEngines, this.messagesReadyToProcess, pei));
     }
 
     @Override
     public void deregisterProcessingEngine(ProcessingEngineInterface pei) {
-        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processorsMap.entrySet()) {
-            if (pei.equals(entry.getValue())){
+        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processingEngines.entrySet()) {
+            if (containtProcessingEngine(pei, entry)) {
                 int procId = entry.getKey();
-                processorsMap.remove(procId);
-                messagesToCheck.remove(procId);
-                messagesReadyToProcess.remove(procId);
+                removeProcessingEngineFromListeningOnEvents(procId);
             }
         }
     }
 
+    private void removeProcessingEngineFromListeningOnEvents(int procId) {
+        processingEngines.remove(procId);
+        messagesToCheckIsImportant.remove(procId);
+        messagesReadyToProcess.remove(procId);
+    }
+
+    private boolean containtProcessingEngine(ProcessingEngineInterface pei, Map.Entry<Integer, ProcessingEngineInterface> entry) {
+        return pei.equals(entry.getValue());
+    }
+
     @Override
     public void newEvent(EventInterface ei) {
-        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processorsMap.entrySet()) {
+        for (Map.Entry<Integer, ProcessingEngineInterface> entry : processingEngines.entrySet()) {
             Integer key = entry.getKey();
-            BlockingQueue<EventInterface> preQueue = messagesToCheck.get(key);
-            try {
-                preQueue.put(ei);
-            } catch (InterruptedException e) {
-            }
+            addToMessagesToCheckIsImportant(ei, key);
+        }
+    }
+
+    private void addToMessagesToCheckIsImportant(EventInterface ei, Integer key) {
+        BlockingQueue<EventInterface> preQueue = messagesToCheckIsImportant.get(key);
+        try {
+            preQueue.put(ei);
+        } catch (InterruptedException e) {
         }
     }
 }
@@ -65,7 +77,7 @@ class IsImportantChecker implements Runnable {
 
     public IsImportantChecker(int peId, Map<Integer, ProcessingEngineInterface> allProcessingEngines,
                               Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToCheck,
-                              Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToProcess, 
+                              Map<Integer, LinkedBlockingQueue<EventInterface>> messagesToProcess,
                               ProcessingEngineInterface pei) {
         this.peId = peId;
         this.allProcessingEngines = allProcessingEngines;
@@ -76,18 +88,26 @@ class IsImportantChecker implements Runnable {
 
     @Override
     public void run() {
-        try {
-            while (allProcessingEngines.containsValue(processingEngineInterface)) {//is still registered
-                EventInterface eventInterface = messagesToCheck.take();
-                if (processingEngineInterface.isItImportant(eventInterface)) {
-                    messagesToProcess.put(eventInterface);
-                }
+
+        while (processingEngineIsStillRegistered()) {//is still registered
+            try {
+                addToMessagesToProcessIfItsImportant();
+            } catch (InterruptedException e) {
             }
-        } catch (InterruptedException e) {
         }
     }
-}
 
+    private void addToMessagesToProcessIfItsImportant() throws InterruptedException {
+        EventInterface eventInterface = messagesToCheck.take();
+        if (processingEngineInterface.isItImportant(eventInterface)) {
+            messagesToProcess.put(eventInterface);
+        }
+    }
+
+    private boolean processingEngineIsStillRegistered() {
+        return allProcessingEngines.containsValue(processingEngineInterface);
+    }
+}
 
 
 class ProcessMessage implements Runnable {
@@ -108,11 +128,19 @@ class ProcessMessage implements Runnable {
     @Override
     public void run() {
         try {
-            while (allProcessingEngines.containsValue(processingEngineInterface)) {
-                EventInterface ei = messagesToProcess.take();
-                processingEngineInterface.processEvent(ei);
+            while (processingEngineIsStillRegistered()) {
+                takeEventAndProcess();
             }
         } catch (InterruptedException e) {
         }
+    }
+
+    private void takeEventAndProcess() throws InterruptedException {
+        EventInterface ei = messagesToProcess.take();
+        processingEngineInterface.processEvent(ei);
+    }
+
+    private boolean processingEngineIsStillRegistered() {
+        return allProcessingEngines.containsValue(processingEngineInterface);
     }
 }
