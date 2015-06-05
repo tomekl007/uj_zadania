@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class optimizationImpl extends optimizationPOA {
     AtomicInteger clientId = new AtomicInteger();
-    Map<Short, ClientData> clientDataMap = new TreeMap<>();
+    final Map<Short, ClientData> clientDataMap = Collections.synchronizedMap(new TreeMap<Short, ClientData>());
     public optimizationImpl(){
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(new CountAvailability(clientDataMap), 0, 1, TimeUnit.MILLISECONDS);
@@ -28,11 +28,14 @@ public class optimizationImpl extends optimizationPOA {
 
     @Override
     public void hello(int id) {
-        System.out.println("hello for id : "+ id);
-        Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
-        for(Map.Entry<Short, ClientData> entry : entries){
-            if(entry.getValue().id == id){
-                entry.getValue().refreshCounter();
+        synchronized (clientDataMap) {
+            System.out.println("hello for id : " + id);
+
+            Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
+            for (Map.Entry<Short, ClientData> entry : entries) {
+                if (entry.getValue().id == id) {
+                    entry.getValue().refreshCounter();
+                }
             }
         }
 
@@ -40,9 +43,12 @@ public class optimizationImpl extends optimizationPOA {
 
     @Override
     public void best_range(rangeHolder r) {//tod test it properly
-        RangeClass rangeClass = bestRange(clientDataMap);
+        //synchronized (clientDataMap) {
+            RangeClass rangeClass = bestRange(clientDataMap);
+            r.value = new range(rangeClass.bestStartRange, rangeClass.bestEndRange);
+       // }
         
-        r.value = new range(rangeClass.bestStartRange, rangeClass.bestEndRange);
+        
 
     }
 
