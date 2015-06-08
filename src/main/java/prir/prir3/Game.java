@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -51,7 +51,7 @@ public class Game implements GameInterface, Serializable {
         teamsRegsisterLock.lock();
         try {
             for (Team team : teams) {
-                for (Player player : team.players.values()) {
+                for (Player player : team.players) {
                     if (player.playerId == uid && team.players.size() == PLAYERS_IN_TEAM) {
                         return true;
                     }
@@ -65,27 +65,40 @@ public class Game implements GameInterface, Serializable {
 
     }
 
-    @Override
-    public long[] getTeam(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findTeam(uid).getTeam();
-    }
 
     @Override
+    public long[] getTeam(long uid) throws RemoteException, PlayerNotAssignedToGame {
+        for (Team team : teams) {
+            for (Player player : team.players) {
+                if (player.playerId == uid) {
+                    long[] uids = new long[team.players.size()];
+                    for (int i = 0; i < team.players.size(); i++) {
+                        uids[i] = team.players.get(i).playerId;
+                    }
+                    return uids;
+                }
+            }
+        }
+        throw new PlayerNotAssignedToGame();
+    }
+    
+    
+    @Override
     public void move(Move mv) throws RemoteException, MoveAlreadyDone, PlayerNotAssignedToGame {
-        findTeam(mv.uid).move(mv);
+        findTeamForPlayer(mv.uid).move(mv);
     }
 
     @Override
     public Move getMove(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findTeam(uid).getMove(uid);
+        return findTeamForPlayer(uid).getMove(uid);
     }
 
     @Override
     public int getPhase(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findTeam(uid).getPhase();
+       return findTeamForPlayer(uid).getPhase();
     }
 
-    private Team findTeam(long uid) throws PlayerNotAssignedToGame {
+    private Team findTeamForPlayer(long uid) throws PlayerNotAssignedToGame {
         teamsRegsisterLock.lock();
         try {
 
@@ -103,21 +116,26 @@ public class Game implements GameInterface, Serializable {
 
     private class Team {
         private AtomicInteger phase;
-        private LinkedList<Move> moves;
-        public final ConcurrentHashMap<Long, Player> players;
+        private final LinkedList<Move> moves;
+        public final List<Player> players;
 
         Team() {
             phase = new AtomicInteger(1);
             moves = new LinkedList<Move>();
-            players = new ConcurrentHashMap<Long, Player>();
+            players = new LinkedList<>();
         }
 
         public void addPlayer(long uid) {
-            players.put(uid, new Player(moves, uid));
+            players.add(new Player(moves, uid));
         }
 
         public Player find(long uid) {
-            return players.get(uid);
+            for (Player player : players) {
+                if (player.playerId == uid) {
+                  return player;  
+                }
+            }
+            return null;
         }
 
         public boolean contains(long uid) {
@@ -133,14 +151,6 @@ public class Game implements GameInterface, Serializable {
 
         }
 
-        public long[] getTeam() {
-            Long[] keySet = players.keySet().toArray(new Long[players.size()]);
-            long[] ids = new long[players.size()];
-            for (int i = 0; i < players.size(); ++i)
-                ids[i] = keySet[i];
-            return ids;
-        }
-
         public void move(Move mv) throws MoveAlreadyDone {
             synchronized (moves) {
                 if (hasMoved(mv.uid))
@@ -152,7 +162,13 @@ public class Game implements GameInterface, Serializable {
         }
 
         public Move getMove(long uid) throws PlayerNotAssignedToGame {
-            Player player = players.get(uid);
+            Player player = null;
+            for (Player p : players) {
+                if (p.playerId == uid) {
+                    player = p;
+                }
+            }
+
             if (player == null)
                 throw new PlayerNotAssignedToGame();
             Move mv;
