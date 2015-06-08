@@ -3,7 +3,6 @@ package prir.prir3;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -153,10 +152,10 @@ public class Game implements GameInterface, Serializable {
 
         public void move(Move mv) throws MoveAlreadyDone {
             synchronized (moves) {
-                if (hasMoved(mv.uid))
+                if (gameIsInProperPhase(mv.uid))
                     throw new MoveAlreadyDone();
                 moves.add(mv);
-                if (moves.size() != 0 && moves.size() % PLAYERS_IN_TEAM == 0)
+                if (moves.size() != 0 && moves.size() % PLAYERS_IN_TEAM == 0)//todo chagne it
                     phase.incrementAndGet();
             }
         }
@@ -181,11 +180,10 @@ public class Game implements GameInterface, Serializable {
             }
         }
 
-        private boolean hasMoved(long uid) {
+        private boolean gameIsInProperPhase(long uid) {
             synchronized (moves) {
-                Iterator<Move> it = moves.descendingIterator();
-                while (it.hasNext()) {
-                    Move mv = it.next();
+                if(moves.size() > 0) {
+                    Move mv = moves.getLast();
                     if (mv.phase != getPhase())
                         return false;
                     if (mv.uid == uid)
@@ -197,20 +195,20 @@ public class Game implements GameInterface, Serializable {
     }
 
     private class Player {
-        private AtomicInteger moveRequest;
+        private AtomicInteger historyId;
         private LinkedList<Move> moves;
         public final long playerId;
 
         Player(LinkedList<Move> moves, long playerId) {
             this.playerId = playerId;
-            moveRequest = new AtomicInteger(0);
+            historyId = new AtomicInteger(0);
             this.moves = moves;
         }
 
         public Move getMove() {
-            if (moveRequest.get() >= moves.size())
+            if (historyId.get() >= moves.size())
                 return null;
-            return moves.get(moveRequest.getAndIncrement());
+            return moves.get(historyId.getAndIncrement());
         }
     }
 }
