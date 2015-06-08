@@ -2,12 +2,7 @@ package prir.prir3;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.Map;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class PMO_Client {
 
 	private final static int PLAYERS = 31;
-	public final static int PLAYERS_IN_TEAM = 3;
+	public final static int PLAYERS_IN_TEAM = GameInterface.PLAYERS_IN_TEAM;
 	private final static AtomicInteger counter = new AtomicInteger(0); // pomocnik
 																		// w
 																		// liczeniu
@@ -30,7 +25,7 @@ public class PMO_Client {
 	private static Set<Long> si = new HashSet<>();
 	private static Map<Long, List<Long>> idTeam = new HashMap<>();
 
-	private static Map<Long, List<GameInterface.Move>> idMoves = new HashMap<>();
+	private static final Map<Long, List<GameInterface.Move>> idMoves = Collections.synchronizedMap(new HashMap<Long, List<GameInterface.Move>>());
 
 	private static void sleep(long msec) {
 		try {
@@ -187,8 +182,9 @@ public class PMO_Client {
 				} catch (RemoteException e) {
 					e.printStackTrace();
 				}
-
-				idMoves.put(id, new ArrayList<GameInterface.Move>());
+                synchronized ( idMoves ) {
+                    idMoves.put(id, new ArrayList<GameInterface.Move>());
+                }
 
 				// symulacja gry, wykonujemy 3 fazy gry, wysylamy ruch, odbieramy ruch przeciwnikow
 				// sprawdzamy czy faktycznie przeciwnicy wyslali takie posuniecia
