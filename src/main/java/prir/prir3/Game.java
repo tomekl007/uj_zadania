@@ -11,47 +11,46 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class Game implements GameInterface, Serializable {
     private int platerId = 0;
-    private AtomicInteger playerCounter = new AtomicInteger(0);
-    private final LinkedList<Team> teams = new LinkedList<>();
-    private final Lock teamsRegsisterLock = new ReentrantLock();
+    private final LinkedList<SpecificGame> specificGames = new LinkedList<>();
+    private final Lock specificGameRegisterLock = new ReentrantLock();
 
 
     @Override
     public long register() throws RemoteException {
-        teamsRegsisterLock.lock();
+        specificGameRegisterLock.lock();
         try {
             long id = ++platerId;
             boolean joined = false;
 
-            for (Team team : teams) {
-                if (couldJoinToGame(team)) {
+            for (SpecificGame specificGame : specificGames) {
+                if (couldJoinToGame(specificGame)) {
                     joined = true;
-                    team.addPlayer(id);
+                    specificGame.addPlayer(id);
                 }
             }
             if (!joined) {
-                Team newTeam = new Team();
-                newTeam.addPlayer(id);
-                teams.add(newTeam);
+                SpecificGame newSpecificGame = new SpecificGame();
+                newSpecificGame.addPlayer(id);
+                specificGames.add(newSpecificGame);
             }
             return id;
         } finally {
-            teamsRegsisterLock.unlock();
+            specificGameRegisterLock.unlock();
         }
     }
 
-    private boolean couldJoinToGame(Team team) {
-        return team.players.size() < GameInterface.PLAYERS_IN_TEAM;
+    private boolean couldJoinToGame(SpecificGame specificGame) {
+        return specificGame.players.size() < GameInterface.PLAYERS_IN_TEAM;
     }
 
 
     @Override
     public boolean isGameReady(long uid) throws RemoteException {
-        teamsRegsisterLock.lock();
+        specificGameRegisterLock.lock();
         try {
-            for (Team team : teams) {
-                for (Player player : team.players) {
-                    if (player.playerId == uid && team.players.size() == PLAYERS_IN_TEAM) {
+            for (SpecificGame specificGame : specificGames) {
+                for (Player player : specificGame.players) {
+                    if (player.playerId == uid && specificGame.players.size() == PLAYERS_IN_TEAM) {
                         return true;
                     }
                 }
@@ -59,7 +58,7 @@ public class Game implements GameInterface, Serializable {
             return false;
 
         } finally {
-            teamsRegsisterLock.unlock();
+            specificGameRegisterLock.unlock();
         }
 
     }
@@ -67,12 +66,12 @@ public class Game implements GameInterface, Serializable {
 
     @Override
     public long[] getTeam(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        for (Team team : teams) {
-            for (Player player : team.players) {
+        for (SpecificGame specificGame : specificGames) {
+            for (Player player : specificGame.players) {
                 if (player.playerId == uid) {
-                    long[] uids = new long[team.players.size()];
-                    for (int i = 0; i < team.players.size(); i++) {
-                        uids[i] = team.players.get(i).playerId;
+                    long[] uids = new long[specificGame.players.size()];
+                    for (int i = 0; i < specificGame.players.size(); i++) {
+                        uids[i] = specificGame.players.get(i).playerId;
                     }
                     return uids;
                 }
@@ -84,41 +83,42 @@ public class Game implements GameInterface, Serializable {
     
     @Override
     public void move(Move mv) throws RemoteException, MoveAlreadyDone, PlayerNotAssignedToGame {
-        findTeamForPlayer(mv.uid).move(mv);
+        findSpecificGameForPlayer(mv.uid).move(mv);
     }
 
     @Override
     public Move getMove(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findTeamForPlayer(uid).getMove(uid);
+        return findSpecificGameForPlayer(uid).getMove(uid);
     }
 
     @Override
     public int getPhase(long uid) throws RemoteException, PlayerNotAssignedToGame {
-       return findTeamForPlayer(uid).getPhase();
+       return findSpecificGameForPlayer(uid).getPhase();
     }
 
-    private Team findTeamForPlayer(long uid) throws PlayerNotAssignedToGame {
-        teamsRegsisterLock.lock();
+    private SpecificGame findSpecificGameForPlayer(long uid) throws PlayerNotAssignedToGame {
+        specificGameRegisterLock.lock();
         try {
 
-            for (Team t : teams) {
-                if (t.contains(uid)) {
-                    return t;
+            for (SpecificGame t : specificGames) {
+                for (Player player : t.players) {
+                    if(player.playerId == uid)
+                        return t;
                 }
             }
             throw new PlayerNotAssignedToGame();
         } finally {
-            teamsRegsisterLock.unlock();
+            specificGameRegisterLock.unlock();
         }
     }
 
 
-    private class Team {
+    private class SpecificGame {
         private AtomicInteger phase;
         private final LinkedList<Move> moves;
         public final List<Player> players;
 
-        Team() {
+        SpecificGame() {
             phase = new AtomicInteger(1);
             moves = new LinkedList<Move>();
             players = new LinkedList<>();
@@ -128,18 +128,6 @@ public class Game implements GameInterface, Serializable {
             players.add(new Player(moves, uid));
         }
 
-        public Player find(long uid) {
-            for (Player player : players) {
-                if (player.playerId == uid) {
-                  return player;  
-                }
-            }
-            return null;
-        }
-
-        public boolean contains(long uid) {
-            return find(uid) != null;
-        }
 
         public int getPhase() {
             return phase.get();
@@ -152,13 +140,28 @@ public class Game implements GameInterface, Serializable {
 
         public void move(Move mv) throws MoveAlreadyDone {
             synchronized (moves) {
-                if (gameIsInProperPhase(mv.uid))
+                if (moveForThatPhaseWaAlreadyDone(mv.uid))
                     throw new MoveAlreadyDone();
                 moves.add(mv);
+
+                // if (!notAllPlayersMovedInGivenPhase(players, mv)) {
+                //     phase.incrementAndGet();
+                //     }
+                //}
+
                 if (moves.size() != 0 && moves.size() % PLAYERS_IN_TEAM == 0)//todo chagne it
                     phase.incrementAndGet();
             }
-        }
+         }
+
+
+        private boolean notAllPlayersMovedInGivenPhase(List<Player> players, Move mv) {
+                for (Player player : players) {
+                    if (player.getMove().phase != mv.phase) return true;
+                }
+                return false;
+            }
+
 
         public Move getMove(long uid) throws PlayerNotAssignedToGame {
             Player player = null;
@@ -180,7 +183,7 @@ public class Game implements GameInterface, Serializable {
             }
         }
 
-        private boolean gameIsInProperPhase(long uid) {
+        private boolean moveForThatPhaseWaAlreadyDone(long uid) {
             synchronized (moves) {
                 if(moves.size() > 0) {
                     Move mv = moves.getLast();
@@ -206,7 +209,7 @@ public class Game implements GameInterface, Serializable {
         }
 
         public Move getMove() {
-            if (historyId.get() >= moves.size())
+            if (historyId.get() >= moves.size() || moves.size() == 0)
                 return null;
             return moves.get(historyId.getAndIncrement());
         }
