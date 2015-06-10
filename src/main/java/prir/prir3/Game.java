@@ -173,14 +173,17 @@ public class Game implements GameInterface, Serializable {
 
             if (player == null)
                 throw new PlayerNotAssignedToGame();
-            Move mv;
-            while (true) {
-                mv = player.getMove();
-                if (mv == null)
-                    return null;
-                if (mv.uid != uid)
-                    return mv;
-            }
+            return getMoveForPlayer(player, uid);
+        }
+
+        private Move getMoveForPlayer(Player player, long uid) {
+            Move mv = player.getMove();
+            if (mv == null)
+                return null;
+            if (mv.uid != uid)
+                return mv;
+            else
+                return getMoveForPlayer(player, uid);
         }
 
         private boolean moveForThatPhaseWaAlreadyDone(long uid) {
