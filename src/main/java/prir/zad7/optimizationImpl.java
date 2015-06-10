@@ -2,17 +2,15 @@
 
 import org.omg.CORBA.IntHolder;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 class optimizationImpl extends optimizationPOA {
     AtomicInteger clientId = new AtomicInteger();
-    final Map<Short, ClientData> clientDataMap = Collections.synchronizedMap(new TreeMap<Short, ClientData>());
+    final Map<Short, ClientData> clientDataMap = new ConcurrentSkipListMap<Short, ClientData>();
     public optimizationImpl(){
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
         executor.scheduleAtFixedRate(new CountAvailability(clientDataMap), 0, 1, TimeUnit.MILLISECONDS);
     }
     
@@ -157,7 +155,7 @@ class ClientData{
     }
 
     public void refreshCounter() {
-        counter = new AtomicInteger(timeout);
+        counter.set(timeout);
     }
 }
 
