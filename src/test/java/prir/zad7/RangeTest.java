@@ -14,7 +14,59 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class RangeTest {
 
-    
+    @Test
+    public void shouldFindSimpleRange(){
+        //given
+        Map<Short, ClientData> clientDataMap = new TreeMap<>();
+        clientDataMap.put((short)10, new ClientData(true));
+
+        //when
+        range range = new RangeTest().best_range(clientDataMap);
+
+        //then
+        assertThat(range.bestStartIp).isEqualTo(((short)10));
+        assertThat(range.bestEndIp).isEqualTo((short)10);
+
+
+    }
+
+    @Test
+    public void t1(){
+        //given
+        Map<Short, ClientData> clientDataMap = new TreeMap<>();
+        clientDataMap.put((short)10, new ClientData(true));
+        clientDataMap.put((short)12, new ClientData(true));
+        clientDataMap.put((short)13, new ClientData(true));
+
+        //when
+        range range = new RangeTest().best_range(clientDataMap);
+
+        //then
+        assertThat(range.bestStartIp).isEqualTo(((short)12));
+        assertThat(range.bestEndIp).isEqualTo((short)13);
+
+
+    }
+
+    @Test
+    public void shouldFindWhenThresholdValues(){
+        //given
+        Map<Short, ClientData> clientDataMap = new TreeMap<>();
+        clientDataMap.put((short)1, new ClientData(true));
+        clientDataMap.put((short)254, new ClientData(true));
+        clientDataMap.put((short)255, new ClientData(true));
+        //when
+        range range = new RangeTest().best_range(clientDataMap);
+
+        //then
+        assertThat(range.bestStartIp).isEqualTo(((short)254));
+        assertThat(range.bestEndIp).isEqualTo((short)255);
+
+
+    }
+
+
+
     @Test
     public void shouldFindRange(){
         //given
@@ -167,6 +219,23 @@ public class RangeTest {
 
         short index = 1;
         for(Map.Entry<Short, ClientData> entry : entries){
+            if(entry.getKey() - endIp > 1){
+                if(lengthOfRange > bestLengthOfRange){
+                    bestLengthOfRange = lengthOfRange;
+                    bestStartRange = startRange;
+                    bestEndRange = endRange;
+                    bestStartIp = startIp;
+                    bestEndIp = endIp;
+                }
+                startRange = 0;
+                endRange = 0;
+                startIp = 0;
+                endIp = 0;
+                lengthOfRange = -1;
+            }
+            
+            
+            
             if(!entry.getValue().working) {
                 if(lengthOfRange > bestLengthOfRange){
                     bestLengthOfRange = lengthOfRange;
