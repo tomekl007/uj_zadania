@@ -3,8 +3,8 @@ package prir.prir3;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -79,8 +79,8 @@ public class Game implements GameInterface, Serializable {
         }
         throw new PlayerNotAssignedToGame();
     }
-    
-    
+
+
     @Override
     public void move(Move mv) throws RemoteException, MoveAlreadyDone, PlayerNotAssignedToGame {
         findSpecificGameForPlayer(mv.uid).move(mv);
@@ -93,7 +93,7 @@ public class Game implements GameInterface, Serializable {
 
     @Override
     public int getPhase(long uid) throws RemoteException, PlayerNotAssignedToGame {
-       return findSpecificGameForPlayer(uid).getPhase();
+        return findSpecificGameForPlayer(uid).getPhase();
     }
 
     private SpecificGame findSpecificGameForPlayer(long uid) throws PlayerNotAssignedToGame {
@@ -102,7 +102,7 @@ public class Game implements GameInterface, Serializable {
 
             for (SpecificGame t : specificGames) {
                 for (Player player : t.players) {
-                    if(player.playerId == uid)
+                    if (player.playerId == uid)
                         return t;
                 }
             }
@@ -116,7 +116,7 @@ public class Game implements GameInterface, Serializable {
     private class SpecificGame {
         private AtomicInteger phase;
         private final LinkedList<Move> moves;
-        public final List<Player> players;
+        public final LinkedList<Player> players;
 
         SpecificGame() {
             phase = new AtomicInteger(1);
@@ -140,27 +140,37 @@ public class Game implements GameInterface, Serializable {
 
         public void move(Move mv) throws MoveAlreadyDone {
             synchronized (moves) {
-                if (moveForThatPhaseWaAlreadyDone(mv.uid))
+                if (moveForThatPhaseWaAlreadyDone(mv.uid, moves))
                     throw new MoveAlreadyDone();
                 moves.add(mv);
 
-                // if (!notAllPlayersMovedInGivenPhase(players, mv)) {
-                //     phase.incrementAndGet();
-                //     }
-                //}
-
-                if (moves.size() != 0 && moves.size() % PLAYERS_IN_TEAM == 0)//todo chagne it
+                if (allPlayersMovedInGivenPhase(mv)) {
                     phase.incrementAndGet();
-            }
-         }
-
-
-        private boolean notAllPlayersMovedInGivenPhase(List<Player> players, Move mv) {
-                for (Player player : players) {
-                    if (player.getMove().phase != mv.phase) return true;
                 }
+            }
+        }
+
+
+        private boolean allPlayersMovedInGivenPhase(Move mv) {
+
+            int numberOfIterations = PLAYERS_IN_TEAM;
+            if (this.moves.size() == 0)
+                return false;
+            else if (this.moves.size() >= PLAYERS_IN_TEAM) {
+                Iterator<Move> playerIterator = moves.descendingIterator();
+                while (playerIterator.hasNext() && numberOfIterations > 0) {
+                    Move next = playerIterator.next();
+                    if (next.phase != mv.phase) {
+                        return false;
+                    }
+                    numberOfIterations--;
+                }
+                return true;
+            }else {
                 return false;
             }
+
+        }
 
 
         public Move getMove(long uid) throws PlayerNotAssignedToGame {
@@ -186,18 +196,20 @@ public class Game implements GameInterface, Serializable {
                 return getMoveForPlayer(player, uid);
         }
 
-        private boolean moveForThatPhaseWaAlreadyDone(long uid) {
-            synchronized (moves) {
-                if(moves.size() > 0) {
-                    Move mv = moves.getLast();
-                    if (mv.phase != getPhase())
-                        return false;
-                    if (mv.uid == uid)
-                        return true;
+        private boolean moveForThatPhaseWaAlreadyDone(long uid, LinkedList<Move> moves) {
+         synchronized (this.moves) {
+                if (this.moves.size() == 0) {
+                    return false;
+                }else{
+                        Move mv = this.moves.getLast();
+                        if (mv.phase != getPhase())
+                            return false;
+                        if (mv.uid == uid)
+                            return true;
+                    }
                 }
+                return false;
             }
-            return false;
-        }
     }
 
     private class Player {
