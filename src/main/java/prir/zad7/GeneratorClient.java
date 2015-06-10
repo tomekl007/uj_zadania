@@ -1,40 +1,79 @@
-
-
-import org.omg.CosNaming.*;
-import org.omg.CORBA.*;
+import org.omg.CORBA.IntHolder;
+import org.omg.CORBA.ORB;
+import org.omg.CosNaming.NameComponent;
+import org.omg.CosNaming.NamingContext;
+import org.omg.CosNaming.NamingContextHelper;
 
 public class GeneratorClient {
- public static void main( String[] argv ) throws Exception {
-  ORB orb = ORB.init( argv, null );
-  org.omg.CORBA.Object namingContextObj = orb.resolve_initial_references( "NameService" );
-  NamingContext namingContext = NamingContextHelper.narrow( namingContextObj );
+    public static void main(String[] argv) throws Exception {
+        ORB orb = ORB.init(argv, null);
+        org.omg.CORBA.Object namingContextObj = orb.resolve_initial_references("NameService");
+        NamingContext namingContext = NamingContextHelper.narrow(namingContextObj);
+        NameComponent[] path = {
+                new NameComponent("optimization", "Object")
+        };
+        org.omg.CORBA.Object envObj = namingContext.resolve(path);
+        final optimization c = optimizationHelper.narrow(envObj);
+        final IntHolder ih = new IntHolder();
+        rangeHolder rh = new rangeHolder();
 
-  NameComponent[] path = {
-    new NameComponent( "optimization", "Object" )
-  };
+        c.register((short) 1, 6000, ih);
+        for (int i = 0; i < 3; ++i) {
+            final int finalI = i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    IntHolder id = new IntHolder();
+                    rangeHolder rh = new rangeHolder();
+                    c.register((short) (finalI + 3), 3000, id);
+                    while (true) {
+                        try {
+                            Thread.sleep(2000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        c.hello(id.value);
+                        c.best_range(rh);
+                        System.out.println("from-to " + rh.value.from + "-" + rh.value.to);
+                    }
+                }
+            }).start();
+        }
+        Thread.sleep(4000);
+        for (int i = 30; i < 41; ++i) {
+            final int finalI = i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    IntHolder id = new IntHolder();
+                    rangeHolder rh = new rangeHolder();
+                    c.register((short) (finalI), 3000, id);
+                    for (int j = 0; j < 5; j++) {
+                        try {
+                            Thread.sleep(1500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        c.hello(id.value);
+                        c.best_range(rh);
+                        System.out.println("from-to " + rh.value.from + "-" + rh.value.to);
+                    }
+                }
+            }).start();
+        }
 
-  org.omg.CORBA.Object envObj = namingContext.resolve( path );
-  optimization c = optimizationHelper.narrow( envObj );
-  IntHolder ih = new IntHolder();
-     IntHolder ih2 = new IntHolder();
-     IntHolder ih3 = new IntHolder();
-  
-     c.register((short)1, 10000, ih);
-     c.register((short)2, 5000, ih2);
-     c.register((short)3, 1, ih3);
-     c.register((short)4, 4000, ih3);
-     c.register((short)5, 4000, ih3);
-     c.register((short)6, 4000, ih3);
-     System.out.println("get id : "+ ih.value);
-     Thread.sleep(1000);
-     c.hello(ih3.value);
-     rangeHolder rh = new rangeHolder();
-     c.best_range(rh);
-     System.out.println("rh.from " +  rh.value.from);
-     System.out.println("rh.to " +  rh.value.to);
-
- }
-  
-    
-    
+        while (true) {
+            Thread.sleep(2000);
+            c.hello(ih.value);
+            c.best_range(rh);
+            System.out.println("from-to " + rh.value.from + "-" + rh.value.to);
+        }
+    }
 }
+/*
+    przez pierwsze 4 sekundy
+    ma byc 3-5
+    potem przez 7 sekund ma byc 3-40
+    30-40
+    a potem znowu 3-5
+ */

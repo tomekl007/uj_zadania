@@ -7,10 +7,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Created by tomasz.lelek on 02/06/15.
- */
-public class optimizationImpl extends optimizationPOA {
+
+class optimizationImpl extends optimizationPOA {
     AtomicInteger clientId = new AtomicInteger();
     final Map<Short, ClientData> clientDataMap = Collections.synchronizedMap(new TreeMap<Short, ClientData>());
     public optimizationImpl(){
@@ -28,16 +26,16 @@ public class optimizationImpl extends optimizationPOA {
 
     @Override
     public void hello(int id) {
-        synchronized (clientDataMap) {
+        //synchronized (clientDataMap) {
             System.out.println("hello for id : " + id);
-
+            
             Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
             for (Map.Entry<Short, ClientData> entry : entries) {
                 if (entry.getValue().id == id) {
                     entry.getValue().refreshCounter();
                 }
             }
-        }
+        //}
 
     }
 
@@ -45,7 +43,8 @@ public class optimizationImpl extends optimizationPOA {
     public void best_range(rangeHolder r) {//tod test it properly
         //synchronized (clientDataMap) {
             RangeClass rangeClass = bestRange(clientDataMap);
-            r.value = new range(rangeClass.bestStartRange, rangeClass.bestEndRange);
+            System.out.println("best_range : "+ rangeClass);
+            r.value = new range(rangeClass.bestStartIp, rangeClass.bestEndIp);
        // }
         
         
@@ -54,29 +53,59 @@ public class optimizationImpl extends optimizationPOA {
 
 
     public RangeClass bestRange(Map<Short, ClientData> clientDataMap) {//tod test it properly
+        System.out.println("bestRange for : "+ clientDataMap);
         short startRange=0;
+        short startIp=0;
         short endRange=0;
+        short endIp = 0;
         int lengthOfRange = -1;
 
+
+        short bestStartIp = 0;
         short bestStartRange = 0;
+        short bestEndIp = 0;
         short bestEndRange = 0;
         int bestLengthOfRange = -1;
         Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
 
         short index = 1;
         for(Map.Entry<Short, ClientData> entry : entries){
+            if(entry.getKey() - endIp > 1){
+                if(lengthOfRange > bestLengthOfRange){
+                    bestLengthOfRange = lengthOfRange;
+                    bestStartRange = startRange;
+                    bestEndRange = endRange;
+                    bestStartIp = startIp;
+                    bestEndIp = endIp;
+                }
+                startRange = 0;
+                endRange = 0;
+                startIp = 0;
+                endIp = 0;
+                lengthOfRange = -1;
+            }
+
+
+
             if(!entry.getValue().working) {
                 if(lengthOfRange > bestLengthOfRange){
                     bestLengthOfRange = lengthOfRange;
                     bestStartRange = startRange;
                     bestEndRange = endRange;
+                    bestStartIp = startIp;
+                    bestEndIp = endIp;
                 }
                 startRange = 0;
                 endRange = 0;
+                startIp = 0;
+                endIp = 0;
                 lengthOfRange = -1;
             }else if(entry.getValue().working && startRange != 0){
+                endIp = entry.getKey();
                 endRange = index;
             }else if(entry.getValue().working){
+                startIp = entry.getKey();
+                endIp = entry.getKey();
                 startRange = index;
                 endRange = index;
             }
@@ -87,11 +116,13 @@ public class optimizationImpl extends optimizationPOA {
         if(lengthOfRange > bestLengthOfRange){
             bestStartRange = startRange;
             bestEndRange = endRange;
+            bestStartIp = startIp;
+            bestEndIp = endIp;
         }
 
-
-
-        return new RangeClass(bestStartRange, bestEndRange);
+        RangeClass range = new RangeClass(bestStartRange, bestEndRange, bestStartIp, bestEndIp);
+        System.out.println("--> returns : "+ range);
+        return range;
     }
 
 
@@ -158,11 +189,25 @@ class RangeClass{
 
     public final short bestStartRange;
     public final short bestEndRange;
+    public final short bestStartIp;
+    public final short bestEndIp;
 
-    public RangeClass(short bestStartRange, short bestEndRange) {
+    @Override
+    public String toString() {
+        return "RangeClass{" +
+                "bestStartRange=" + bestStartRange +
+                ", bestEndRange=" + bestEndRange +
+                ", bestStartIp=" + bestStartIp +
+                ", bestEndIp=" + bestEndIp +
+                '}';
+    }
+
+    public RangeClass(short bestStartRange, short bestEndRange, short bestStartIp, short bestEndIp) {
 
         this.bestStartRange = bestStartRange;
         this.bestEndRange = bestEndRange;
+        this.bestStartIp = bestStartIp;
+        this.bestEndIp = bestEndIp;
     }
 }
 
