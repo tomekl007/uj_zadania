@@ -83,20 +83,20 @@ public class Game implements GameInterface, Serializable {
 
     @Override
     public void move(Move mv) throws RemoteException, MoveAlreadyDone, PlayerNotAssignedToGame {
-        findSpecificGameForPlayer(mv.uid).move(mv);
+        getGameForPlayerId(mv.uid).move(mv);
     }
 
     @Override
     public Move getMove(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findSpecificGameForPlayer(uid).getMove(uid);
+        return getGameForPlayerId(uid).getMove(uid);
     }
 
     @Override
     public int getPhase(long uid) throws RemoteException, PlayerNotAssignedToGame {
-        return findSpecificGameForPlayer(uid).getPhase();
+        return getGameForPlayerId(uid).getPhase();
     }
 
-    private SpecificGame findSpecificGameForPlayer(long uid) throws PlayerNotAssignedToGame {
+    private SpecificGame getGameForPlayerId(long uid) throws PlayerNotAssignedToGame {
         specificGameRegisterLock.lock();
         try {
 
@@ -232,9 +232,9 @@ public class Game implements GameInterface, Serializable {
 }
 
 
-class RmiStarter {
+class RmiApplicationStarter {
 
-    public RmiStarter() throws RemoteException {
+    public RmiApplicationStarter() throws RemoteException {
         super();
     }
 
