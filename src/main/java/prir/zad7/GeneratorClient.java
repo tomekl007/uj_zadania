@@ -10,8 +10,9 @@ public class GeneratorClient {
         org.omg.CORBA.Object namingContextObj = orb.resolve_initial_references("NameService");
         NamingContext namingContext = NamingContextHelper.narrow(namingContextObj);
         NameComponent[] path = {
-                new NameComponent("optimization", "Object")
+                new NameComponent( "Optymalizacja", "Object" )
         };
+
         org.omg.CORBA.Object envObj = namingContext.resolve(path);
         final optimization c = optimizationHelper.narrow(envObj);
         final IntHolder ih = new IntHolder();
@@ -63,7 +64,7 @@ public class GeneratorClient {
         }
 
         while (true) {
-            Thread.sleep(2000);
+            Thread.sleep(5000);
             c.hello(ih.value);
             c.best_range(rh);
             System.out.println("from-to " + rh.value.from + "-" + rh.value.to);

@@ -232,9 +232,9 @@ public class Game implements GameInterface, Serializable {
 }
 
 
-class RmiApplicationStarter {
+class Start {
 
-    public RmiApplicationStarter() throws RemoteException {
+    public Start() throws RemoteException {
         super();
     }
 

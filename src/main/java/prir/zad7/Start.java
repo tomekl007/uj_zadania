@@ -4,7 +4,7 @@ import org.omg.CosNaming.*;
 import org.omg.CORBA.*;
 import org.omg.PortableServer.*;
 
-public class GeneratorServer {
+class Start {
  public static void main( String[] argv ) {
   try {
     ORB orb = ORB.init( argv, null );
@@ -17,12 +17,13 @@ public class GeneratorServer {
     System.out.println( orb.object_to_string( ref ) );
 
     org.omg.CORBA.Object namingContextObj = orb.resolve_initial_references( "NameService" );
-    NamingContext nCont = NamingContextHelper.narrow( namingContextObj ); 
-    NameComponent[] path = {
-       new NameComponent( "optimization", "Object" )
-    };
+    NamingContext nCont = NamingContextHelper.narrow( namingContextObj );
+      NameComponent[] path = {
+              new NameComponent( "Optymalizacja", "Object" )
+      };
 
-    nCont.rebind( path, ref );
+
+      nCont.rebind( path, ref );
     orb.run();
   }
   catch ( Exception e ) { }

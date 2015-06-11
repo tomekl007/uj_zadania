@@ -1,6 +1,12 @@
 //package prir.zad7;
 
 import org.omg.CORBA.IntHolder;
+import org.omg.CORBA.ORB;
+import org.omg.CosNaming.NameComponent;
+import org.omg.CosNaming.NamingContext;
+import org.omg.CosNaming.NamingContextHelper;
+import org.omg.PortableServer.POA;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -208,4 +214,3 @@ class RangeClass{
         this.bestEndIp = bestEndIp;
     }
 }
-
