@@ -3,13 +3,15 @@ package prir.prir3;
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-public class Game implements GameInterface, Serializable {
+ class Game implements GameInterface, Serializable {
     private int platerId = 0;
     private final LinkedList<SpecificGame> specificGames = new LinkedList<>();
     private final Lock specificGameRegisterLock = new ReentrantLock();
@@ -233,23 +235,10 @@ public class Game implements GameInterface, Serializable {
 
 
 class Start {
-
-    public Start() throws RemoteException {
-        super();
-    }
-
-    public static final String REGISTRY_NAME =
-            "GAME";
-
-    public static void main(String[] args) throws Exception {
-        int registryPortNumber = 1099;
-
-        GameInterface game = new Game();
-
-        LocateRegistry
-                .createRegistry(registryPortNumber)
-                .rebind(REGISTRY_NAME, game);
-        System.out.println("Server is running...");
-        Thread.sleep(1000000000);
+    public static void main(String[] arg) throws Exception {
+        GameInterface rmiService = (GameInterface) UnicastRemoteObject
+                .exportObject(new Game(), 0);
+        Registry registry = LocateRegistry.getRegistry();
+        registry.rebind("GAME", rmiService);
     }
 }
