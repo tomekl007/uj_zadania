@@ -201,7 +201,6 @@ public class RangeTest {
 
 
     public range best_range(Map<Short, ClientData> clientDataMap) {//tod test it properly
-        //todo 1 3 4 5 -> 3 - 5
         System.out.println("bestRange for : "+ clientDataMap);
         short startRange=0;
         short startIp=0;

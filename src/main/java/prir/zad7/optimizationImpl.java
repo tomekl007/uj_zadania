@@ -9,6 +9,7 @@ import org.omg.PortableServer.POA;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -16,7 +17,7 @@ class optimizationImpl extends optimizationPOA {
     AtomicInteger clientId = new AtomicInteger();
     final Map<Short, ClientData> clientDataMap = new ConcurrentSkipListMap<Short, ClientData>();
     public optimizationImpl(){
-        ScheduledExecutorService executor = Executors.newScheduledThreadPool(10);
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         executor.scheduleAtFixedRate(new CountAvailability(clientDataMap), 0, 1, TimeUnit.MILLISECONDS);
     }
     
@@ -37,6 +38,7 @@ class optimizationImpl extends optimizationPOA {
             for (Map.Entry<Short, ClientData> entry : entries) {
                 if (entry.getValue().id == id) {
                     entry.getValue().refreshCounter();
+                    entry.getValue().isWorkingAgain();
                 }
             }
         //}
@@ -47,7 +49,7 @@ class optimizationImpl extends optimizationPOA {
     public void best_range(rangeHolder r) {//tod test it properly
         //synchronized (clientDataMap) {
             RangeClass rangeClass = bestRange(clientDataMap);
-            System.out.println("best_range : "+ rangeClass);
+            System.out.println("best_range : "+ rangeClass + " for : " + clientDataMap);
             r.value = new range(rangeClass.bestStartIp, rangeClass.bestEndIp);
        // }
         
@@ -91,7 +93,7 @@ class optimizationImpl extends optimizationPOA {
 
 
 
-            if(!entry.getValue().working) {
+            if(!entry.getValue().working.get()) {
                 if(lengthOfRange > bestLengthOfRange){
                     bestLengthOfRange = lengthOfRange;
                     bestStartRange = startRange;
@@ -104,10 +106,10 @@ class optimizationImpl extends optimizationPOA {
                 startIp = 0;
                 endIp = 0;
                 lengthOfRange = -1;
-            }else if(entry.getValue().working && startRange != 0){
+            }else if(entry.getValue().working.get() && startRange != 0){
                 endIp = entry.getKey();
                 endRange = index;
-            }else if(entry.getValue().working){
+            }else if(entry.getValue().working.get()){
                 startIp = entry.getKey();
                 endIp = entry.getKey();
                 startRange = index;
@@ -147,7 +149,7 @@ class ClientData{
 
 //    private final short ip;
     private final int timeout;
-    boolean working;
+    AtomicBoolean working;
     AtomicInteger counter;
     public final int id;
 
@@ -155,13 +157,17 @@ class ClientData{
 
 //        this.ip = ip;
         this.timeout = timeout;
-        this.working = true;
+        this.working = new AtomicBoolean(true);
         this.counter = new AtomicInteger(timeout);
         this.id = id;
     }
 
     public void refreshCounter() {
         counter.set(timeout);
+    }
+
+    public void isWorkingAgain() {
+        working.set(true);
     }
 }
 
@@ -179,7 +185,7 @@ class CountAvailability implements Runnable{
         Set<Map.Entry<Short, ClientData>> entries = clientDataMap.entrySet();
         for(Map.Entry<Short, ClientData> entry : entries){
             if(entry.getValue().counter.get() == 0){
-                entry.getValue().working = false;
+                entry.getValue().working.set(false);
             }else {
                 entry.getValue().counter.decrementAndGet();
                 System.out.println("decrement for : "+ entry);
@@ -212,5 +218,31 @@ class RangeClass{
         this.bestEndRange = bestEndRange;
         this.bestStartIp = bestStartIp;
         this.bestEndIp = bestEndIp;
+    }
+}
+
+class Start {
+    public static void main( String[] argv ) {
+        try {
+            ORB orb = ORB.init( argv, null );
+            POA rootpoa = (POA)orb.resolve_initial_references( "RootPOA" );
+            rootpoa.the_POAManager().activate();
+
+            optimizationImpl cimpl = new optimizationImpl();
+            org.omg.CORBA.Object ref = rootpoa.servant_to_reference( cimpl );
+
+            System.out.println( orb.object_to_string( ref ) );
+
+            org.omg.CORBA.Object namingContextObj = orb.resolve_initial_references( "NameService" );
+            NamingContext nCont = NamingContextHelper.narrow( namingContextObj );
+            NameComponent[] path = {
+                    new NameComponent( "Optymalizacja", "Object" )
+            };
+
+
+            nCont.rebind( path, ref );
+            orb.run();
+        }
+        catch ( Exception e ) { }
     }
 }
