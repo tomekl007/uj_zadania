@@ -1,132 +1,266 @@
 package prir.zad2;
 
-import com.sun.javafx.tk.Toolkit;
-import javafx.util.Pair;
-
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Lock;
 
 class MultithreadTaskManagement implements MultithreadTaskManagementInterface {
-    private LinkedBlockingQueue<TaskInterface> tasksReadyToProcess = new LinkedBlockingQueue<TaskInterface>();
-    private Map<Integer, Integer> threadsPerNiceLevel = new HashMap<>();
-    private Executor globalExecutor;
-    private int threads;
-    private CyclicBarrier barrier;
-    private CountDownLatch countDownLatch;
-    private AtomicInteger counter = new AtomicInteger(0);
 
-    public MultithreadTaskManagement() {
-    }
+    private Manager manager = new Manager();
 
     @Override
     public void setNumberOfAvailableThreads(int threads) {
-        System.out.println("setNumberOfAvailableThreads : " + threads);
-        this.threads = threads;
-        PriorityBlockingQueue<Runnable> pq = new PriorityBlockingQueue<>(20, new ComparePriority());
-        globalExecutor = new ThreadPoolExecutor(threads, threads, 10, TimeUnit.SECONDS, pq);
-
-
+        manager.setMaximumThreads(threads);
     }
 
-
-    private static class ComparePriority<T extends RunnableWithNiceLevel> implements Comparator<T> {
-
-        @Override
-        public int compare(T o1, T o2) {
-            int n1 = o1.getNiceLevel();
-            int n2 = o2.getNiceLevel();
-
-            if (n1 == n2)
-                return 0;
-            else if (n1 > n2)
-                return 1;
-            else
-                return -1;
-        }
-
-    }
-    
     @Override
     public void setMaximumThreadsPerNiceLevel(int[] threadsLimit) {
-        for (int i = 0; i < threadsLimit.length; i++) {
-            threadsPerNiceLevel.put(i, threadsLimit[i]);
-        }
-
-
-        new Thread(
-                new DispatcherThread(tasksReadyToProcess, threadsPerNiceLevel,
-                        threads, globalExecutor)).start();
-        //}
-        System.out.println("setMaximumThreadsPerNiceLevel " + threadsPerNiceLevel);
+        for (int i = 0; i < threadsLimit.length; ++i)
+            manager.AddLimit(new NiceLevelWithLimit(i, threadsLimit[i]));
     }
 
     @Override
     public void newTask(TaskInterface ti) {
-        try {
-            tasksReadyToProcess.put(ti);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-}
-
-
-class DispatcherThread implements Runnable {
-
-    private LinkedBlockingQueue<TaskInterface> tasksReadyToProcess;
-    private Map<Integer, Integer> threadsPerNiceLevel;
-    private final int threads;
-
-    private Executor globalExecutor;
-
-
-    public DispatcherThread(LinkedBlockingQueue<TaskInterface> tasksReadyToProcess, Map<Integer, Integer> threadsPerNiceLevel, int threads, Executor globalExecutor) {
-        this.tasksReadyToProcess = tasksReadyToProcess;
-        this.threadsPerNiceLevel = threadsPerNiceLevel;
-
-
-        this.threads = threads;
-
-        this.globalExecutor = globalExecutor;
+        manager.submitTask(ti);
     }
 
+    class Manager {
+        private final SortedSet<NiceLevelProperties> tasks = Collections.synchronizedSortedSet(new TreeSet<NiceLevelProperties>(new Comparator<NiceLevelProperties>() {
+            @Override
+            public int compare(NiceLevelProperties o1, NiceLevelProperties o2) {
+                return o1.niceLevel.compareTo(o2.niceLevel);
+            }
+        }));
 
-    @Override
-    public void run() {
-        while (true) {
-            try{
-                final TaskInterface taskInterface  = tasksReadyToProcess.take();
-                globalExecutor.execute(new RunnableWithNiceLevel(taskInterface) {
-                    @Override
-                    public void run() {
-                        taskInterface.execute();
-                    }
-                });
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        private AtomicInteger MaximumThreads = new AtomicInteger(1),CurrentThreads = new AtomicInteger(0);
+        private final GlobalThreadsInformation globalThreadsInformation = new GlobalThreadsInformation(CurrentThreads);
+        private Thread taskExecutor;
+
+
+        public void AddLimit(NiceLevelWithLimit niceLevelWithLimit) {
+            synchronized (tasks){
+                tasks.add
+                        (new NiceLevelProperties(
+                                niceLevelWithLimit.threadLimit, globalThreadsInformation, niceLevelWithLimit.niceLevel));
             }
         }
 
+        public void setMaximumThreads(int limit) {
+            MaximumThreads.set(limit);
+        }
 
+        public void submitTask(TaskInterface ti) {
+            synchronized (tasks) {
+                boolean added = false;
+                for(NiceLevelProperties niceLevel : tasks){
+                    if(niceLevel.niceLevel == ti.getNiceLevel()){
+                        added = true;
+                        niceLevel.Queue.add(ti);
+                    }
+                }
+                if(!added){
+                    NiceLevelProperties n = new NiceLevelProperties(1, globalThreadsInformation, ti.getNiceLevel());
+                    n.Queue.add(ti);
+                    tasks.add(n);
+                }
+            }
+
+            startTaskExecutorIfIsNotAlreadyStarted();
+        }
+
+
+        public void startTaskExecutorIfIsNotAlreadyStarted() {
+            if (taskExecutor != null && taskExecutor.isAlive())
+                return;
+            taskExecutor = new Thread(new TaskExecutorPreconditonsChecker(tasks, globalThreadsInformation, CurrentThreads, MaximumThreads));
+            taskExecutor.start();
+        }
     }
-}
 
-abstract class RunnableWithNiceLevel implements Runnable {
 
-    private TaskInterface taskInterface;
+    class NiceLevelWithLimit {
 
-    public RunnableWithNiceLevel(TaskInterface taskInterface) {
-        this.taskInterface = taskInterface;
+
+        public final int niceLevel;
+        public final int threadLimit;
+
+        public NiceLevelWithLimit(int niceLevel, int threadLimit) {
+
+            this.niceLevel = niceLevel;
+            this.threadLimit = threadLimit;
+        }
     }
 
-    public TaskInterface getTaskInterface() {
-        return taskInterface;
+
+    class GlobalThreadsInformation {
+        private AtomicInteger usedThreads;
+
+        @Override
+        public String toString() {
+            return "GlobalThreadsInformation{" +
+                    "CurrentThreads=" + usedThreads +
+                    '}';
+        }
+
+        GlobalThreadsInformation(AtomicInteger usedThreads) {
+            this.usedThreads = usedThreads;
+        }
+
+        public void decrementUsedThreads() {
+            usedThreads.decrementAndGet();
+        }
+
+        public void incrementUsedThreads() {
+            usedThreads.incrementAndGet();
+        }
     }
-    
-    public int getNiceLevel(){
-        return taskInterface.getNiceLevel();
+
+
+    class NiceLevelProperties implements Comparable<NiceLevelProperties> {
+        private final Integer limit;
+        private AtomicInteger used;
+        public ConcurrentLinkedQueue<TaskInterface> Queue;
+        private final GlobalThreadsInformation globalThreadsInformation;
+        public final Integer niceLevel;
+
+        @Override
+        public String toString() {
+            return "NiceLevelProperties{" +
+                    "limit=" + limit +
+                    ", used=" + used +
+                    ", Queue=" + Queue +
+                    ", globalThreadsInformation=" + globalThreadsInformation +
+                    ", niceLevel=" + niceLevel +
+                    '}';
+        }
+
+        NiceLevelProperties(int limit, GlobalThreadsInformation globalThreadsInformation, int niceLevel) {
+            this.limit = limit;
+            this.globalThreadsInformation = globalThreadsInformation;
+            this.niceLevel = niceLevel;
+            this.used = new AtomicInteger(0);
+            Queue = new ConcurrentLinkedQueue<>();
+        }
+
+        public boolean thereIsNoFreeThreads() {
+            return used.get() >= limit;
+        }
+
+        public void run() {
+            final TaskInterface ti = Queue.poll();
+            globalThreadsInformation.incrementUsedThreads();
+            used.incrementAndGet();
+            new Thread(new TaskExecutorForNiceLevel(globalThreadsInformation, ti, used)).start();
+        }
+
+
+        @Override
+        public int compareTo(NiceLevelProperties o) {
+            return this.niceLevel.compareTo(o.niceLevel);
+        }
     }
-    
+
+
+    class TaskExecutorForNiceLevel implements Runnable{
+
+        private final GlobalThreadsInformation globalThreadsInformation;
+        private final TaskInterface ti;
+        private final AtomicInteger used;
+
+        public TaskExecutorForNiceLevel(GlobalThreadsInformation globalThreadsInformation, TaskInterface ti, AtomicInteger used) {
+            this.globalThreadsInformation = globalThreadsInformation;
+            this.ti = ti;
+            this.used = used;
+        }
+
+        @Override
+        public void run() {
+            ti.execute();
+            globalThreadsInformation.decrementUsedThreads();
+            synchronized (globalThreadsInformation) {
+                notifyThatThereIsAvailableThreadToExectueTask();
+            }
+            used.decrementAndGet();
+        }
+
+        private void notifyThatThereIsAvailableThreadToExectueTask() {
+            globalThreadsInformation.notifyAll();
+        }
+    }
+
+    class TaskExecutorPreconditonsChecker implements Runnable {
+
+
+        private final SortedSet<NiceLevelProperties> tasks;
+        private final GlobalThreadsInformation globalThreadsInformation;
+        private final AtomicInteger CurrentThreads;
+        private AtomicInteger MaximumThreads;
+
+        public TaskExecutorPreconditonsChecker(SortedSet<NiceLevelProperties> tasks, GlobalThreadsInformation globalThreadsInformation, AtomicInteger CurrentThreads, AtomicInteger MaximumThreads) {
+
+            this.tasks = tasks;
+            this.globalThreadsInformation = globalThreadsInformation;
+            this.CurrentThreads = CurrentThreads;
+            this.MaximumThreads = MaximumThreads;
+        }
+
+        private boolean tryToRunTaskForNiceLevel() throws InterruptedException {
+            synchronized (tasks) {
+                //Collections.sort(tasks);
+                for (NiceLevelProperties l : tasks) {
+                    if (thereIsNoAvailableThreads()) {
+                        return false;
+                    }
+                    if (couldExecuteJobForGivenNiceLevel(l))
+                        l.run();
+                }
+                return true;
+            }
+        }
+
+        private boolean thereIsNoAvailableThreads() {
+            return CurrentThreads.get() >= MaximumThreads.get();
+        }
+
+        private boolean couldExecuteJobForGivenNiceLevel(NiceLevelProperties l) {
+            return !l.thereIsNoFreeThreads() && thereIsTashToExecuteForGivenNiceLevel(l);
+        }
+
+        private boolean thereIsTashToExecuteForGivenNiceLevel(NiceLevelProperties l) {
+            return !l.Queue.isEmpty();
+
+        }
+
+        @Override
+        public void run() {
+            while (thereAreTasksToExecute()) {
+                try {
+                    if (taskCouldNotBeTriggeredForGivenNIceLevel())
+                        synchronized (globalThreadsInformation) {
+                            globalThreadsInformation.wait();
+                        }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        private boolean taskCouldNotBeTriggeredForGivenNIceLevel() throws InterruptedException {
+            return !tryToRunTaskForNiceLevel();
+        }
+
+        boolean thereAreTasksToExecute(){
+            return !thereIsNotTasksToExecute();
+        }
+
+        private boolean thereIsNotTasksToExecute() {
+            synchronized (tasks) {
+                for (NiceLevelProperties l : tasks)
+                    if (l.Queue.size() > 0)
+                        return false;
+                return true;
+            }
+        }
+    }
+
 }

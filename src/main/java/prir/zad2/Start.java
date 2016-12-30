@@ -53,7 +53,7 @@ public class Start {
 		@Override
 		public void run() {
 			Start.printTestStart( " - 1 - " );
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 2 );//todo what does it mean ?
 			PMO_TaskHelper.maxTasksLimit.set( 2 );
@@ -99,7 +99,7 @@ public class Start {
 		@Override
 		public void run() {
 			Start.printTestStart( " - 2 - " );
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 3 );
 			PMO_TaskHelper.maxTasksLimit.set( 3 );
@@ -145,7 +145,7 @@ public class Start {
 		public void run() {
 			Start.printTestStart( " - 3A - " );
 
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 2 ); // 2 watki, wiec preferencja wg. nice level
 			PMO_TaskHelper.maxTasksLimit.set( 2 );
@@ -189,7 +189,7 @@ public class Start {
 		public void run() {
 			Start.printTestStart( " - 3B - " );
 
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 3 ); // 3 watki, 2 dla zadan level 0
 			PMO_TaskHelper.maxTasksLimit.set( 3 );
@@ -236,7 +236,7 @@ public class Start {
 		@Override
 		public void run() {
 			Start.printTestStart( " - 4 - " );
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 10 ); 
 			PMO_TaskHelper.maxTasksLimit.set( 10 );
@@ -273,7 +273,7 @@ public class Start {
 		public void run() {
 			Start.printTestStart( " - 4B - " );
 
-			final MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			final MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 10 ); 
 			PMO_TaskHelper.maxTasksLimit.set( 10 );
@@ -332,7 +332,7 @@ public class Start {
 		public void run() {
 			Start.printTestStart( " - 5 - " );
 
-			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagementFinal();
+			MultithreadTaskManagementInterface mtmi = new MultithreadTaskManagement();
 
 			mtmi.setNumberOfAvailableThreads( 4 ); // 4 watki
 			PMO_TaskHelper.maxTasksLimit.set( 4 );

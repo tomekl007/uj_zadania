@@ -1,6 +1,6 @@
 package prir.prir3.client;
 
-import prir.prir3.Game;
+import prir.prir3.BrokenGame;
 import prir.prir3.GameInterface;
 import prir.prir3.server.RmiStarter;
 
@@ -24,7 +24,7 @@ public class GameClient {
             System.out.println(next);
         }
         
-        Game game = (Game)
+        BrokenGame game = (BrokenGame)
                 Naming.lookup(lookupName);
         long result = game.register();
         GameInterface.Move move = new GameInterface.Move();

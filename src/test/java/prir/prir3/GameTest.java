@@ -4,8 +4,6 @@ import org.junit.Test;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -14,7 +12,7 @@ public class GameTest {
     @Test
     public void shouldRegisterUser() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         long uidR1 = game.register();
         long uidR2 = game.register();
@@ -36,7 +34,7 @@ public class GameTest {
     @Test(expected = GameInterface.MoveAlreadyDone.class)
     public void shouldMoveInGameTwiceAndThrowForMoveForSamePhase() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         long uidR1 = game.register();
         long uidR2 = game.register();
@@ -54,7 +52,7 @@ public class GameTest {
     @Test(expected = GameInterface.PlayerNotAssignedToGame.class)
     public void shouldThrowIfPlayerNotAssigned() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         
         //then
@@ -70,7 +68,7 @@ public class GameTest {
     @Test
     public void shouldPlayGameWithTwoPlayers() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         long uidR1 = game.register();
         long uidR2 = game.register();
@@ -112,7 +110,7 @@ public class GameTest {
     @Test(expected = GameInterface.MoveAlreadyDone.class)
     public void shouldPlayGameWithTwoPlayersAndThrowWhenMoveAlreadyDone() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         long uidR1 = game.register();
         long uidR2 = game.register();
@@ -162,7 +160,7 @@ public class GameTest {
     @Test
     public void shouldGetPhaseForCurrentGame() throws RemoteException {
         //given
-        Game game = new Game();
+        BrokenGame game = new BrokenGame();
         //when
         long uidR1 = game.register();
         long uidR2 = game.register();
@@ -214,7 +212,7 @@ public class GameTest {
     }
 
     @Test
-    public void getButLast(){
+    public void getButLast() throws RemoteException {
         int uidR2 = 1;
         
         GameInterface.Move mv1 = new GameInterface.Move();
@@ -230,14 +228,14 @@ public class GameTest {
         ArrayList<GameInterface.Move> moves = new ArrayList<>();
         moves.add(mv1);
         moves.add(mv2);
-        GameInterface.Move lastWithoutUserId = new Game().getLastWithoutUserId(moves, moves, uidR2);
+        GameInterface.Move lastWithoutUserId = new BrokenGame().getLastWithoutUserId(moves, moves, uidR2);
         assertEquals(lastWithoutUserId.uid, 2);
         assertEquals(moves.size(), 1);
 
     }
 
     @Test
-    public void getButLastSecond(){
+    public void getButLastSecond() throws RemoteException {
         int uidR2 = 1;
 
         GameInterface.Move mv1 = new GameInterface.Move();
@@ -248,7 +246,7 @@ public class GameTest {
 
         ArrayList<GameInterface.Move> moves = new ArrayList<>();
         moves.add(mv1);
-        GameInterface.Move lastWithoutUserId = new Game().getLastWithoutUserId(moves, moves, uidR2);
+        GameInterface.Move lastWithoutUserId = new BrokenGame().getLastWithoutUserId(moves, moves, uidR2);
         assertEquals(lastWithoutUserId, null);
         assertEquals(moves.size(), 1);
 
